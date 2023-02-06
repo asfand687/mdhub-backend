@@ -4,9 +4,11 @@ import bcrypt from "bcrypt"
 
 export const registerUser = async (req, res) => {
   const newUser = new User({
-    username: req.body.username,
+    firstName: req.body.firstName,
+    lastName: req.body.lastName,
     email: req.body.email,
-    password: bcrypt.hashSync(req.body.password, 10)
+    password: bcrypt.hashSync(req.body.password, 10),
+    phone: req.body.phone
   });
 
   try {
