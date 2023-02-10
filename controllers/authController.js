@@ -5,31 +5,33 @@ import jwt from "jsonwebtoken";
 
 
 export const registerUser = async (req, res) => {
-
+  const { firstName, lastName, email, phone, address, city, province, postalCode } = req.body.primaryUserData
   try {
     const newUser = await new User({
-      firstName: req.body.primaryUserData.firstName,
-      lastName: req.body.primaryUserData.lastName,
-      email: req.body.primaryUserData.email,
+      firstName,
+      lastName,
+      email,
       password: bcrypt.hashSync(req.body.primaryUserData.password, 10),
-      phone: req.body.primaryUserData.phone,
-      address: req.body.primaryUserData.address,
-      city: req.body.primaryUserData.city,
-      province: req.body.primaryUserData.province,
-      postalCode: req.body.primaryUserData.postalCode,
+      phone,
+      address,
+      city,
+      province,
+      postalCode
     });
     const savedUser = await newUser.save()
 
+    // Saving Child Accounts
     req.body.childUsersData && req.body.childUsersData.filter(Boolean).map(async childAccount => {
       const newChildAccount = new ChildAccount({
         ...childAccount,
+        password: bcrypt.hashSync(childAccount.password, 10),
         parentAccountId: savedUser._id
       });
       const savedChildAccount = await newChildAccount.save();
       savedUser.childAccounts.push(savedChildAccount._id)
       savedUser.save()
     })
-
+    await savedUser.save()
     const { password, ...others } = savedUser._doc;
     res.status(200).json({ ...others })
   } catch (err) {
@@ -43,7 +45,7 @@ export const loginUser = async (req, res) => {
       {
         email: req.body.email
       }
-    );
+    ).populate("childAccounts");
 
     !user && res.status(401).json("User not found");
 
