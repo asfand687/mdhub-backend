@@ -11,7 +11,8 @@ const User = new mongoose.Schema({
   city: { type: String },
   province: { type: String },
   postalCode: { type: String },
-  childAccounts: [{ type: mongoose.Schema.Types.ObjectId, ref: 'ChildAccount' }]
+  childAccounts: [{ type: mongoose.Schema.Types.ObjectId, ref: 'ChildAccount' }],
+  accountType: { type: String },
 }, 
 { timestamps: true }
 )
