@@ -64,7 +64,7 @@ export const loginUser = async (req, res) => {
           process.env.JWT_SEC,
           { expiresIn: "3d" }
         );
-        const { password, ...others } = user._doc;
+        const { password, createdAt, updatedAt, __v, ...others } = user._doc;
         res.status(200).json({ ...others, accessToken })
       } else {
         res.status(401).json("Incorrect Password");
