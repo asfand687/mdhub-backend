@@ -5,7 +5,8 @@ import jwt from "jsonwebtoken";
 
 
 export const registerUser = async (req, res) => {
-  const { firstName, lastName, email, phone, address, city, province, postalCode } = req.body.primaryUserData
+  console.log(req.body)
+  const { firstName, lastName, email, phone, address, city, province, postalCode, accountType, paymentMode } = req.body.primaryUserData
   try {
     const newUser = await new User({
       firstName,
@@ -16,7 +17,9 @@ export const registerUser = async (req, res) => {
       address,
       city,
       province,
-      postalCode
+      postalCode,
+      accountType,
+      paymentMode
     });
     const savedUser = await newUser.save()
 
@@ -40,12 +43,14 @@ export const registerUser = async (req, res) => {
 }
 
 export const loginUser = async (req, res) => {
+  console.log(req.body)
   try {
     const user = await User.findOne(
       {
         email: req.body.email
       }
     ).populate("childAccounts");
+
 
     !user && res.status(401).json("User not found");
 
@@ -59,9 +64,10 @@ export const loginUser = async (req, res) => {
           process.env.JWT_SEC,
           { expiresIn: "3d" }
         );
-
         const { password, ...others } = user._doc;
-        res.status(200).json({ ...others, accessToken });
+        res.status(200).json({ ...others, accessToken })
+      } else {
+        res.status(401).json("Incorrect Password");
       }
     })
   } catch (err) {
