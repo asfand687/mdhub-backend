@@ -13,6 +13,7 @@ const User = new mongoose.Schema({
   postalCode: { type: String },
   childAccounts: [{ type: mongoose.Schema.Types.ObjectId, ref: 'ChildAccount' }],
   accountType: { type: String },
+  paymentMode: { type: String },
 }, 
 { timestamps: true }
 )
