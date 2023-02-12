@@ -4,6 +4,7 @@ import cors from 'cors'
 import connectDatabase from './mongodb/connect.js'
 import authRoutes from './routes/auth.js'
 import userRoutes from './routes/userRoutes.js'
+import appointmentRoutes from './routes/appointmentRoutes.js'
 
 dotenv.config()
 
@@ -17,6 +18,7 @@ app.use(cors())
 // Route Middelwares
 app.use('/api/v1/auth', authRoutes)
 app.use('/api/v1/users', userRoutes)
+app.use('/api/v1/appointments', appointmentRoutes)
 
 app.get('/', async (req, res) => {
   res.send("Hello from MD Hub")
