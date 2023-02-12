@@ -12,6 +12,7 @@ const User = new mongoose.Schema({
   province: { type: String },
   postalCode: { type: String },
   childAccounts: [{ type: mongoose.Schema.Types.ObjectId, ref: 'ChildAccount' }],
+  appointments: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Appointment' }],
   accountType: { type: String },
   paymentMode: { type: String },
 }, 
