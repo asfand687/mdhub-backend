@@ -5,7 +5,19 @@ import jwt from "jsonwebtoken";
 
 
 export const registerUser = async (req, res) => {
-  const { firstName, lastName, email, phone, address, city, province, postalCode, accountType, paymentMode } = req.body.primaryUserData
+  const {
+    firstName,
+    lastName,
+    email,
+    phone,
+    address,
+    city,
+    province,
+    postalCode,
+    accountType,
+    paymentMode,
+    recurringPayment
+  } = req.body.primaryUserData
   try {
     const newUser = await new User({
       firstName,
@@ -18,7 +30,8 @@ export const registerUser = async (req, res) => {
       province,
       postalCode,
       accountType,
-      paymentMode
+      paymentMode,
+      recurringPayment
     });
     const savedUser = await newUser.save()
 
