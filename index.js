@@ -5,6 +5,7 @@ import connectDatabase from './mongodb/connect.js'
 import authRoutes from './routes/auth.js'
 import userRoutes from './routes/userRoutes.js'
 import appointmentRoutes from './routes/appointmentRoutes.js'
+import Code from "./models/Code.js"
 
 dotenv.config()
 
@@ -22,6 +23,18 @@ app.use('/api/v1/appointments', appointmentRoutes)
 
 app.get('/', async (req, res) => {
   res.send("Hello from MD Hub")
+})
+
+app.post('/addcodes', async (req, res) => {
+  const { codes } = req.body
+  try {
+    const arr = codes.map(code => ({ code: code.toString() }))
+    const data = await Code.insertMany(arr)
+    console.log(data)
+    res.status(200).json("Codes added successfully")
+  } catch (error) {
+    console.log(error)
+  }
 })
 
 const startServer = async () => {
