@@ -15,7 +15,8 @@ const User = new mongoose.Schema({
   appointments: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Appointment' }],
   accountType: { type: String },
   paymentMode: { type: String },
-  recurringPayment: { type: Boolean, default: true }
+  recurringPayment: { type: Boolean, default: true },
+  loginCode: { type: String }
 }, 
 { timestamps: true }
 )
