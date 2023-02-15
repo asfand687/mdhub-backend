@@ -1,4 +1,5 @@
 import User from "../models/User.js"
+import Code from "../models/Code.js"
 import ChildAccount from "../models/ChildAccount.js"
 import bcrypt from "bcrypt"
 import jwt from "jsonwebtoken";
@@ -19,6 +20,8 @@ export const registerUser = async (req, res) => {
     recurringPayment
   } = req.body.primaryUserData
   try {
+    const code = await Code.findOne({ isAssigned: false })
+
     const newUser = await new User({
       firstName,
       lastName,
@@ -31,8 +34,13 @@ export const registerUser = async (req, res) => {
       postalCode,
       accountType,
       paymentMode,
-      recurringPayment
+      recurringPayment,
+      loginCode: code.code
     });
+
+    code.isAssigned = true
+    code.userId = newUser._id
+    await code.save()
     const savedUser = await newUser.save()
 
     // Saving Child Accounts
