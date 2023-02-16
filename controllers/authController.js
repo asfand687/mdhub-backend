@@ -52,7 +52,7 @@ export const registerUser = async (req, res) => {
       });
       const savedChildAccount = await newChildAccount.save();
       savedUser.childAccounts.push(savedChildAccount._id)
-      savedUser.save()
+      await savedUser.save()
     })
     await savedUser.save()
     const { password, ...others } = savedUser._doc;
