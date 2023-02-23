@@ -16,7 +16,8 @@ const User = new mongoose.Schema({
   accountType: { type: String },
   paymentMode: { type: String },
   recurringPayment: { type: Boolean, default: true },
-  loginCode: { type: String }
+  loginCode: { type: String },
+  stripeCustomerId: { type: String, required: true }
 }, 
 { timestamps: true }
 )
