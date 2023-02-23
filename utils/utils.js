@@ -1,4 +1,9 @@
 import jwt from "jsonwebtoken"
+import * as dotenv from 'dotenv'
+import Stripe from 'stripe'
+
+dotenv.config()
+const stripe = new Stripe(process.env.STRIPE_PRIVATE_KEY)
 
 export const verifyToken = (req, res, next) => {
   const authHeader = req.headers.authorization;
@@ -33,3 +38,38 @@ export const verifyTokenAndAdmin = (req, res, next) => {
     }
   });
 };
+
+export const createStripeCustomer = async (req) => {
+  try {
+    const customer = await stripe.customers.create({
+      description: `Customer for MDHub- ${req.body.primaryUserData.email}`,
+      email: req.body.primaryUserData.email,
+      name: `${req.body.primaryUserData.firstName} ${req.body.primaryUserData.lastName}`,
+      payment_method: req.body.paymentMethod
+    })
+    return customer
+  } catch (error) {
+    throw new error(`Failed to create customer: ${error}`)
+  }
+}
+
+export const confirmPaymentIntent = async (req, customerId) => {
+  try {
+    const paymentIntent = await stripe.paymentIntents.create({
+      amount: req.body.totalAmount, // Replace with the amount you want to charge in cents
+      currency: 'usd', // Replace with your preferred currency,
+      payment_method: req.body.paymentMethod,
+      customer: customerId,
+      setup_future_usage: "on_session",
+      confirm: true,
+      metadata: {
+        firstName: req.body.primaryUserData.firstName,
+        lastName: req.body.primaryUserData.lastName,
+        email: req.body.primaryUserData.email,
+      },
+    })
+    return paymentIntent
+  } catch (error) {
+    throw new error(`Failed to process payment: ${error}`)
+  }
+}
