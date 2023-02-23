@@ -2,7 +2,12 @@ import User from "../models/User.js"
 import Code from "../models/Code.js"
 import ChildAccount from "../models/ChildAccount.js"
 import bcrypt from "bcrypt"
-import jwt from "jsonwebtoken";
+import jwt from "jsonwebtoken"
+import { createStripeCustomer, confirmPaymentIntent } from "../utils/utils.js"
+import Stripe from 'stripe'
+import * as dotenv from 'dotenv'
+dotenv.config()
+const stripe = new Stripe(process.env.STRIPE_PRIVATE_KEY)
 
 
 export const registerUser = async (req, res) => {
@@ -17,9 +22,25 @@ export const registerUser = async (req, res) => {
     postalCode,
     accountType,
     paymentMode,
-    recurringPayment
+    recurringPayment,
   } = req.body.primaryUserData
   try {
+    const customer = await createStripeCustomer(req)
+    await confirmPaymentIntent(req, customer.id)
+
+    if (accountType === "family" && paymentMode === "monthly") {
+      await stripe.subscriptions.create({
+        customer: customer.id,
+        items: [
+          {
+            price: 'price_1MdvMZE5iIaQvU2gCGMrAcEU',
+          },
+        ],
+        trial_period_days: 90,
+        default_payment_method: req.body.paymentMethod,
+      })
+    }
+
     const code = await Code.findOne({ isAssigned: false })
 
     const newUser = await new User({
@@ -35,6 +56,7 @@ export const registerUser = async (req, res) => {
       accountType,
       paymentMode,
       recurringPayment,
+      stripeCustomerId: customer.id,
       loginCode: code.code
     });
 
