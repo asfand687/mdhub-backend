@@ -73,3 +73,46 @@ export const confirmPaymentIntent = async (req, customerId) => {
     throw new error(`Failed to process payment: ${error}`)
   }
 }
+
+export const confirmAppointmentPaymentIntent = async (req, customerId, paymentMethod, amount) => {
+  try {
+    const paymentIntent = await stripe.paymentIntents.create({
+      amount: amount, // Replace with the amount you want to charge in cents
+      currency: 'usd', // Replace with your preferred currency,
+      payment_method: paymentMethod,
+      customer: customerId,
+      setup_future_usage: "on_session",
+      confirm: true,
+      metadata: {
+        description: `description for ${req.body.service}`
+      },
+    })
+    return paymentIntent
+  } catch (error) {
+    throw new error(`Failed to process payment: ${error}`)
+  }
+}
+
+export const getPaymentInfo = async (customerId) => {
+  try {
+    const paymentMethod = await stripe.paymentMethods.list({
+      customer: customerId,
+      type: 'card'
+    })
+    return paymentMethod.data[0].card.last4
+  } catch (error) {
+    throw new error("Failed to retrieve payment info")
+  }
+}
+
+export const updatePaymentMethod = async (customerId, paymentMethodId) => {
+  try {
+    const paymentMethod = await stripe.paymentMethods.attach(
+      paymentMethodId,
+      { customer: customerId }
+    )
+    return true
+  } catch (error) {
+    throw new error("Failed to retrieve payment info")
+  }
+}
