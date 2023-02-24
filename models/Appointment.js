@@ -3,6 +3,8 @@ import mongoose from 'mongoose'
 const Appointment = new mongoose.Schema({
   service: { type: String, required: true },
   date: { type: String, required: true },
+  time: { type: String, required: true },
+  additionalInfo: { type: String, required: true },
   userId: { type: mongoose.Types.ObjectId, ref: "User", required: true },
 },
   { timestamps: true }
