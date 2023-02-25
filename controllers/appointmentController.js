@@ -3,17 +3,17 @@ import User from "../models/User.js"
 import { confirmAppointmentPaymentIntent } from '../utils/utils.js'
 
 export const createAppointment = async (req, res) => {
-  const { date, customerId, service, time, additionalInfo, paymentMethod, amount, userId } = req.body
+  console.log(req.body)
+  const { selectedDate, customerId, serviceName, time, paymentMethod, amount, userId, address } = req.body
   try {
     await confirmAppointmentPaymentIntent(req, customerId, paymentMethod, amount)
     if (confirmAppointmentPaymentIntent) {
       const newAppointment = await new Appointment({
-        date,
+        date: selectedDate,
         userId,
-        service,
+        serviceName,
         time,
-        additionalInfo,
-        amount
+        address
       })
       await newAppointment.save()
       const user = await User.findOne({ _id: userId })
