@@ -6,6 +6,7 @@ const Appointment = new mongoose.Schema({
   time: { type: String },
   address: { type: String },
   city: { type: String },
+  postalCode: { type: String },
   userId: { type: mongoose.Types.ObjectId, ref: "User" },
 },
   { timestamps: true }
