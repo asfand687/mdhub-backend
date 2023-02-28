@@ -6,8 +6,8 @@ export const getUser = async (req, res) => {
   try {
     const user = await User.findById(req.params.id).populate("childAccounts");
     const paymentInfo = user.stripeCustomerId ? await getPaymentInfo(user.stripeCustomerId) : ""
-    const { password, ...others } = user._doc;
-    res.status(200).json({ paymentInfo, ...others });
+    const userInfo = user._doc;
+    res.status(200).json({ paymentInfo, userInfo });
   } catch (error) {
     res.status(500).json(error);
   }
@@ -20,15 +20,25 @@ export const updateUser = async (req, res) => {
       if (attachedPaymentMethod)
         return res.status(200).json("Payment Method Updated")
     }
-    const updatedUser = await User.findByIdAndUpdate(
-      req.params.id,
-      {
-        $set: req.body,
-      },
-      { new: true }
-    );
-    res.status(200).json(updatedUser);
+
+    const user = await User.findOne({ _id: req.params.id })
+
+    if (req.body.password) {
+      user.password = bcrypt.hashSync(req.body.password, 10)
+    }
+    if (req.body.email) {
+      user.email = req.body.email
+    }
+    if (req.body.address) {
+      user.address = req.body.address
+    }
+    if (req.body.phone) {
+      user.phone = req.body.phone
+    }
+    await user.save()
+    res.status(200).json("The User has been updated");
   } catch (err) {
+    console.log(err)
     res.status(500).json(err);
   }
 }

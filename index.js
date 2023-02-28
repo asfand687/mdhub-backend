@@ -5,8 +5,30 @@ import connectDatabase from './mongodb/connect.js'
 import authRoutes from './routes/auth.js'
 import userRoutes from './routes/userRoutes.js'
 import appointmentRoutes from './routes/appointmentRoutes.js'
+import multer from "multer"
+import nodemailer from "nodemailer"
 
 dotenv.config()
+
+var storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, 'uploads/')
+  },
+  filename: function (req, file, cb) {
+    /*Appending extension with original name*/
+    cb(null, file.originalname)
+  }
+})
+
+var upload = multer({ storage: storage })
+
+const transporter = nodemailer.createTransport({
+  service: 'gmail',
+  auth: {
+    user: process.env.GMAIL_EMAIL,
+    pass: process.env.GMAIL_KEY
+  }
+})
 
 const app = express()
 
@@ -22,6 +44,50 @@ app.use('/api/v1/appointments', appointmentRoutes)
 
 app.get('/', async (req, res) => {
   res.send("Hello from MD Hub")
+})
+
+app.post("/sendmail", upload.single('reqform'), (req, res) => {
+  console.log(req.file)
+  console.log(req.body)
+  /* const mailOptions = {
+    from: 'info@mdhub.ca',
+    to: 'hr@homesloutionsajk.shop',
+    subject: 'Requisition Form',
+    html: `
+      <div>
+        <h2>Hello This is Lab Requisition Email for the user ${req.body.firstName}</h2>
+        <p>Here are the additional details:</p>
+        <ul>
+          <li>
+            Phone: ${req.body.phoneNumber}
+          </li>
+          <li>
+            preferredDate: ${req.body.preferredDate}
+          </li>
+          <li>
+            preferredTime: ${req.body.preferredTime}
+          </li>
+          <li>
+            email: ${req.body.emailAddress}
+          </li>
+        </ul>
+      </div>
+    `,
+    attachments: [{
+      filename: "requisition-form.jpg",
+      path: req.file.path
+    }]
+  }
+
+  transporter.sendMail(mailOptions, function (error, info) {
+    if (error) {
+      console.log(error);
+    } else {
+      console.log('Email sent: ' + info.response);
+      // do something useful
+      res.status(200).json("Email Sent Successfully")
+    }
+  }) */
 })
 
 const startServer = async () => {
