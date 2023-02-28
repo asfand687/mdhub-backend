@@ -7,8 +7,11 @@ import userRoutes from './routes/userRoutes.js'
 import appointmentRoutes from './routes/appointmentRoutes.js'
 import multer from "multer"
 import nodemailer from "nodemailer"
+import Stripe from "stripe"
 
 dotenv.config()
+
+const stripe = new Stripe(process.env.STRIPE_PRIVATE_KEY)
 
 var storage = multer.diskStorage({
   destination: function (req, file, cb) {
@@ -88,6 +91,24 @@ app.post("/sendmail", upload.single('reqform'), (req, res) => {
       res.status(200).json("Email Sent Successfully")
     }
   }) */
+})
+
+app.post("/get-billing-info", async (req, res) => {
+  try {
+    const customer = await stripe.customers.retrieve(req.body.customerId)
+    const invoiceList = await stripe.invoices.list({
+      customer: customer.id,
+      limit: 5,
+    })
+    const upcomingInvoice = await stripe.invoices.retrieveUpcoming({
+      customer: customer.id,
+    })
+    const subscription = await stripe.subscriptions.retrieve(customer.subscriptions.data[0].id)
+    res.status(200).json({ invoiceList, upcomingInvoice, subscription })
+  } catch (error) {
+    console.log(error)
+    res.status(500).json(error)
+  }
 })
 
 const startServer = async () => {
