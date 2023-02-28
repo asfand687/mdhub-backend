@@ -5,7 +5,7 @@ import { getPaymentInfo, updatePaymentMethod } from "../utils/utils.js"
 export const getUser = async (req, res) => {
   try {
     const user = await User.findById(req.params.id).populate("childAccounts");
-    const paymentInfo = await getPaymentInfo(user.stripeCustomerId)
+    const paymentInfo = user.stripeCustomerId ? await getPaymentInfo(user.stripeCustomerId) : ""
     const { password, ...others } = user._doc;
     res.status(200).json({ paymentInfo, ...others });
   } catch (error) {
