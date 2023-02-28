@@ -8,6 +8,8 @@ const User = new mongoose.Schema({
   phone: { type: String, required: true, unique: true },
   isChildUser: { type: Boolean, default: false },
   address: { type: String },
+  gender: { type: String },
+  dateOfBirth: { type: String },
   city: { type: String },
   province: { type: String },
   postalCode: { type: String },
