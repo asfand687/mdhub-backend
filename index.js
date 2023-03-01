@@ -49,12 +49,11 @@ app.get('/', async (req, res) => {
   res.send("Hello from MD Hub")
 })
 
-app.post("/sendmail", upload.single('reqform'), (req, res) => {
-  console.log(req.file)
-  console.log(req.body)
-  /* const mailOptions = {
-    from: 'info@mdhub.ca',
-    to: 'hr@homesloutionsajk.shop',
+app.post("/sendmail", upload.single('file'), (req, res) => {
+
+  const mailOptions = {
+    from: 'asfandyar687@gmail.com',
+    to: 'hr@homesolutionsajk.shop',
     subject: 'Requisition Form',
     html: `
       <div>
@@ -90,7 +89,9 @@ app.post("/sendmail", upload.single('reqform'), (req, res) => {
       // do something useful
       res.status(200).json("Email Sent Successfully")
     }
-  }) */
+  })
+
+  res.status(200).json("Email Sent")
 })
 
 app.post("/get-billing-info", async (req, res) => {
