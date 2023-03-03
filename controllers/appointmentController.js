@@ -13,8 +13,7 @@ export const createAppointment = async (req, res) => {
     amount,
     userId,
     address,
-    homecareServices,
-    nursingServices
+    nursingHomecareServices
   } = req.body
   try {
     await confirmAppointmentPaymentIntent(req, customerId, paymentMethod, amount)
@@ -25,8 +24,7 @@ export const createAppointment = async (req, res) => {
         serviceName,
         time,
         address,
-        homecareServices,
-        nursingServices
+        nursingHomecareServices
       })
       await newAppointment.save()
       const user = await User.findOne({ _id: userId })
