@@ -1,8 +1,7 @@
 import mongoose from 'mongoose'
 
 const Appointment = new mongoose.Schema({
-  nursingServices: [{ type: String }],
-  homecareServices: [{ type: String }],
+  nursingHomecareServices: [{ type: String, required: true }],
   diagnosticService: { type: Boolean, default: false },
   date: { type: String },
   time: { type: String },
