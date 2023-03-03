@@ -3,7 +3,6 @@ import User from "../models/User.js"
 import { confirmAppointmentPaymentIntent } from '../utils/utils.js'
 
 export const createAppointment = async (req, res) => {
-  console.log(req.body)
   const {
     selectedDate,
     customerId,
