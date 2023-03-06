@@ -11,19 +11,6 @@ const stripe = new Stripe(process.env.STRIPE_PRIVATE_KEY)
 
 
 export const registerUser = async (req, res) => {
-  const {
-    firstName,
-    lastName,
-    email,
-    phone,
-    address,
-    city,
-    province,
-    postalCode,
-    accountType,
-    paymentMode,
-    recurringPayment,
-  } = req.body.primaryUserData
   try {
     const customer = await createStripeCustomer(req)
     await confirmPaymentIntent(req, customer.id)
@@ -43,19 +30,9 @@ export const registerUser = async (req, res) => {
 
     const code = await Code.findOne({ isAssigned: false })
 
-    const newUser = await new User({
-      firstName,
-      lastName,
-      email,
+    const newUser = new User({
+      ...req.body.primaryUserData,
       password: bcrypt.hashSync(req.body.primaryUserData.password, 10),
-      phone,
-      address,
-      city,
-      province,
-      postalCode,
-      accountType,
-      paymentMode,
-      recurringPayment,
       stripeCustomerId: customer.id,
       loginCode: code.code
     });
@@ -64,25 +41,29 @@ export const registerUser = async (req, res) => {
     code.userId = newUser._id
     await code.save()
     const savedUser = await newUser.save()
+    console.log(savedUser)
 
     // Saving Child Accounts
-    req.body.childUsersData && req.body.childUsersData.filter(Boolean).map(async childAccount => {
-      const newChildAccount = new ChildAccount({
-        ...childAccount,
-        password: bcrypt.hashSync(childAccount.password, 10),
-        parentAccountId: savedUser._id
-      });
-      const savedChildAccount = await newChildAccount.save();
-      savedUser.childAccounts.push(savedChildAccount._id)
+    if (req.body.childUsersData) {
+      for (const childAccount of req.body.childUsersData.filter(Boolean)) {
+        const newChildAccount = new ChildAccount({
+          ...childAccount,
+          password: bcrypt.hashSync(childAccount.password, 10),
+          parentAccountId: savedUser._id
+        });
+        const savedChildAccount = await newChildAccount.save();
+        console.log(savedChildAccount)
+        savedUser.childAccounts.push(savedChildAccount._id)
+      }
       await savedUser.save()
-    })
-    await savedUser.save()
+    }
     const { password, ...others } = savedUser._doc;
     res.status(200).json({ ...others })
   } catch (err) {
     res.status(500).json(err);
   }
 }
+
 
 export const loginUser = async (req, res) => {
   try {
