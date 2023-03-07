@@ -41,7 +41,6 @@ export const registerUser = async (req, res) => {
     code.userId = newUser._id
     await code.save()
     const savedUser = await newUser.save()
-    console.log(savedUser)
 
     // Saving Child Accounts
     if (req.body.childUsersData) {
@@ -52,7 +51,6 @@ export const registerUser = async (req, res) => {
           parentAccountId: savedUser._id
         });
         const savedChildAccount = await newChildAccount.save();
-        console.log(savedChildAccount)
         savedUser.childAccounts.push(savedChildAccount._id)
       }
       await savedUser.save()
