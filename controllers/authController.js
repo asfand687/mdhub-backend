@@ -20,7 +20,7 @@ export const registerUser = async (req, res) => {
         customer: customer.id,
         items: [
           {
-            price: 'price_1MjoXKE5iIaQvU2gv27b2F8L',
+            price: 'price_1MjorkHO2OahTS06AguL8Va7',
           },
         ],
         trial_period_days: 90,
@@ -33,7 +33,7 @@ export const registerUser = async (req, res) => {
         customer: customer.id,
         items: [
           {
-            price: 'price_1MjoXrE5iIaQvU2ghMCN6Beh',
+            price: 'price_1MjorkHO2OahTS06jLpqA1lE',
           },
         ]
       })
@@ -44,7 +44,7 @@ export const registerUser = async (req, res) => {
         customer: customer.id,
         items: [
           {
-            price: 'price_1MjoToE5iIaQvU2gRY9Aa2AL',
+            price: 'price_1MjorkHO2OahTS06GWmKzSx4',
           },
         ],
         trial_period_days: 90,
@@ -57,7 +57,7 @@ export const registerUser = async (req, res) => {
         customer: customer.id,
         items: [
           {
-            price: 'price_1MjoW4E5iIaQvU2guHE3OQIQ',
+            price: 'price_1MjorkHO2OahTS06PzcMuYG9',
           },
         ]
       })
@@ -68,7 +68,7 @@ export const registerUser = async (req, res) => {
         customer: customer.id,
         items: [
           {
-            price: 'price_1Mjoe9E5iIaQvU2gVlw4rCNC',
+            price: 'price_1MjorkHO2OahTS064Zv40WFx',
           },
         ]
       })
@@ -79,7 +79,7 @@ export const registerUser = async (req, res) => {
         customer: customer.id,
         items: [
           {
-            price: 'price_1MjohWE5iIaQvU2ggcqxNaCd',
+            price: 'price_1MjorkHO2OahTS06LzFzYXtD',
           },
         ]
       })
