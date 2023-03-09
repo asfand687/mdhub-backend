@@ -20,11 +20,68 @@ export const registerUser = async (req, res) => {
         customer: customer.id,
         items: [
           {
-            price: 'price_1MdvMZE5iIaQvU2gCGMrAcEU',
+            price: 'price_1MjoXKE5iIaQvU2gv27b2F8L',
           },
         ],
         trial_period_days: 90,
         default_payment_method: req.body.paymentMethod,
+      })
+    }
+
+    if (accountType === "family" && paymentMode === "yearly") {
+      await stripe.subscriptions.create({
+        customer: customer.id,
+        items: [
+          {
+            price: 'price_1MjoXrE5iIaQvU2ghMCN6Beh',
+          },
+        ]
+      })
+    }
+
+    if (accountType === "individual" && paymentMode === "monthly") {
+      await stripe.subscriptions.create({
+        customer: customer.id,
+        items: [
+          {
+            price: 'price_1MjoToE5iIaQvU2gRY9Aa2AL',
+          },
+        ],
+        trial_period_days: 90,
+        default_payment_method: req.body.paymentMethod,
+      })
+    }
+
+    if (accountType === "individual" && paymentMode === "yearly") {
+      await stripe.subscriptions.create({
+        customer: customer.id,
+        items: [
+          {
+            price: 'price_1MjoW4E5iIaQvU2guHE3OQIQ',
+          },
+        ]
+      })
+    }
+
+    if (accountType === "corporate") {
+      await stripe.subscriptions.create({
+        customer: customer.id,
+        items: [
+          {
+            price: 'price_1Mjoe9E5iIaQvU2gVlw4rCNC',
+          },
+        ]
+      })
+    }
+
+    if (accountType === "on demand") {
+      await stripe.subscriptions.create({
+        customer: customer.id,
+        items: [
+          {
+            price: 'price_1MjohWE5iIaQvU2ggcqxNaCd',
+          },
+        ]
       })
     }
 
