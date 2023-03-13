@@ -14,7 +14,6 @@ export const registerUser = async (req, res) => {
   try {
     const { accountType, paymentMode } = req.body.primaryUserData    
     const customer = await createStripeCustomer(req)
-    await confirmPaymentIntent(req, customer.id)
 
     if (accountType === "individual" && paymentMode === "monthly") {
       await stripe.subscriptions.create({
