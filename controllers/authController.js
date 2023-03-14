@@ -122,7 +122,6 @@ export const loginUser = async (req, res) => {
       }
     ).populate("childAccounts");
 
-
     !user && res.status(401).json("User not found");
 
     await bcrypt.compare(req.body.password, user.password, function (err, result) {
@@ -131,6 +130,7 @@ export const loginUser = async (req, res) => {
           {
             id: user._id,
             isChildUser: user.isChildUser,
+            isAdmin: user.isAdmin
           },
           process.env.JWT_SEC,
           { expiresIn: "3d" }
