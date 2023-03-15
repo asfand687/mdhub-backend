@@ -31,7 +31,6 @@ export const getAllUsers = async (req, res) => {
 }
 
 export const deleteUser = async (req, res) => {
-  console.log("DELETE", req.params.id)
   const userId = req.params.id;
 
   try {
