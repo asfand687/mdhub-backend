@@ -5,10 +5,10 @@ import { getUser, updateUser, getAllUsers, deleteUser, getNewUserAndDeletedUserD
 const router = express.Router()
 
 // Get Users PaymentInfo
-router.route('/get_users_payment_info').get(verifyTokenAndAdmin, getUsersWithLatestPayment)
+router.route('/get_users_payment_info').get(getUsersWithLatestPayment)
 
 // Get Users Info and Deleted Users Info
-router.route('/get_user_info').get(verifyTokenAndAdmin, getNewUserAndDeletedUserData)
+router.route('/get_user_info').get(getNewUserAndDeletedUserData)
 
 //Get User
 router.route('/:id').get(verifyToken, getUser)
@@ -17,8 +17,7 @@ router.route('/:id').get(verifyToken, getUser)
 router.route('/').get(getAllUsers)
 
 //Delete User
-router.route('/:id').delete(verifyTokenAndAdmin, deleteUser)
-
+router.route('/:id').delete(deleteUser)
 
 
 // Update User
