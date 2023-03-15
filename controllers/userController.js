@@ -158,6 +158,23 @@ export const updateUser = async (req, res) => {
     if (req.body.phone) {
       user.phone = req.body.phone
     }
+
+    if (req.body.address) {
+      user.address = req.body.address
+    }
+
+    if (req.body.country) {
+      user.country = req.body.country
+    }
+
+    if (req.body.region) {
+      user.region = req.body.region
+    }
+
+    if (req.body.postalCode) {
+      user.postalCode = req.body.postalCode
+    }
+
     await user.save()
     res.status(200).json("The User has been updated");
   } catch (err) {
