@@ -92,16 +92,52 @@ export const getNewUserAndDeletedUserData = async (req, res) => {
       createdAt: {
         $gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) // documents created in the last 7 days
       }
-    }).exec();
+    }).exec()
 
-    const deletedUsers = await DeletedUser.find({}).exec();
+    const deletedUsers = await DeletedUser.find({}).exec()
+
+    // Get the current month and year
+    const currentDate = new Date();
+    const currentMonth = currentDate.getMonth() + 1; // JavaScript months are 0-indexed, so we add 1
+    const currentYear = currentDate.getFullYear();
+
+    // Set the start and end of the current month
+    const startDate = new Date(currentYear, currentMonth - 1, 1); // Subtract 1 from the month to account for 0-indexing
+    const endDate = new Date(currentYear, currentMonth, 0); // Set the end date to the last day of the current month
+
+    // Use Stripe's charges API to retrieve all charges within the current month
+    const charges = await stripe.charges.list({
+      created: {
+        gte: Math.floor(startDate.getTime() / 1000), // Convert to Unix timestamp
+        lte: Math.floor(endDate.getTime() / 1000), // Convert to Unix timestamp
+      },
+    });
+
+    // Calculate the total revenue from the charges
+    let totalRevenue = 0;
+    for (const charge of charges.data) {
+      totalRevenue += charge.amount;
+    }
+
+    // Use Stripe's subscriptions API to retrieve all subscriptions created within the current month
+    const subscriptions = await stripe.subscriptions.list({
+      created: {
+        gte: Math.floor(startDate.getTime() / 1000), // Convert to Unix timestamp
+        lte: Math.floor(endDate.getTime() / 1000), // Convert to Unix timestamp
+      },
+    });
 
     res.status(200).json({
       message: "Successfully retrieved users and deleted users",
-      data: { usersThisWeek, deletedUsers }
-    });
+      data: {
+        usersThisWeek,
+        deletedUsers,
+        totalRevenue: (totalRevenue / 100).toFixed(2),
+        numberOfSubscriptions: subscriptions.data.length
+      }
+    })
   } catch (error) {
-    console.error(error);
+    console.error(error)
     res.status(500).json({
       message: "Failed to retrieve users and deleted users",
       error: error.message
