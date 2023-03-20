@@ -151,16 +151,21 @@ export const getNewUserAndDeletedUserData = async (req, res) => {
 export const getUsersWithLatestPayment = async (req, res) => {
   try {
     const users = await User.find()
+    var latestPayment
     const usersWithLatestPayment = await Promise.all(users.map(async user => {
-      const latestPayment = await stripe.paymentIntents.list({
-        customer: user.stripeCustomerId,
-        limit: 1
-      })
+      if (user.stripeCustomerId === "test") {
+        latestPayment = { data: [{ amount: 0, date: new Date() }] }
+      } else {
+        latestPayment = await stripe.paymentIntents.list({
+          customer: user.stripeCustomerId,
+          limit: 1
+        }) 
+      }
       return {
         ...user.toJSON(),
         latestPayment: {
-          amount: latestPayment.data[0]?.amount || null,
-          date: latestPayment.data[0]?.created || null
+          amount: latestPayment?.data[0]?.amount || null,
+          date: latestPayment?.data[0]?.created || null
         }
       }
     }))
