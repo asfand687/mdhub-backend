@@ -221,3 +221,14 @@ export const updateUser = async (req, res) => {
     res.status(500).json(err);
   }
 }
+
+export const updateCodeForUser = async (req, res) => {
+  try {
+    const user = await User.findOne({ _id: req.params.userId })
+    user.loginCode = req.body.codeValue
+    await user.save()
+    res.status(200).json("The Code has been updated")
+  } catch (error) {
+    res.status(400).json(error.message)
+  }
+}
