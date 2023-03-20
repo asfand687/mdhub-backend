@@ -14,7 +14,7 @@ export const getUser = async (req, res) => {
   try {
     const user = await User.findById(req.params.id).populate("childAccounts")
     let paymentInfo = {}
-    if (!user.isAdmin) {
+    if (!user.isAdmin && user.stripeCustomerId !== "test") {
       paymentInfo = user.stripeCustomerId ? await getPaymentInfo(user.stripeCustomerId) : ""
     }
     const userInfo = user._doc;
