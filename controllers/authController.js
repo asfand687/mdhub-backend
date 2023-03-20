@@ -130,7 +130,8 @@ export const loginUser = async (req, res) => {
           {
             id: user._id,
             isChildUser: user.isChildUser,
-            isAdmin: user.isAdmin
+            isAdmin: user.isAdmin,
+            lastLoggedIn: new Date()
           },
           process.env.JWT_SEC,
           { expiresIn: "3d" }
