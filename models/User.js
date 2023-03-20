@@ -20,7 +20,8 @@ const User = new mongoose.Schema({
   paymentMode: { type: String },
   loginCode: { type: String },
   stripeCustomerId: { type: String, required: true },
-  isAdmin: { type: Boolean, default: false }
+  isAdmin: { type: Boolean, default: false },
+  lastLoggedIn: { type: Date }
 }, 
 { timestamps: true }
 )

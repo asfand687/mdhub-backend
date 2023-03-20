@@ -120,28 +120,28 @@ export const loginUser = async (req, res) => {
       {
         email: req.body.email
       }
-    ).populate("childAccounts");
+    ).populate("childAccounts")
 
-    !user && res.status(401).json("User not found");
+    !user && res.status(401).json("User not found")
 
-    await bcrypt.compare(req.body.password, user.password, function (err, result) {
-      if (result) {
-        const accessToken = jwt.sign(
+    const passwordCorrect = await bcrypt.compare(req.body.password, user.password)
+    if (passwordCorrect) {
+      const accessToken = jwt.sign(
           {
             id: user._id,
             isChildUser: user.isChildUser,
-            isAdmin: user.isAdmin,
-            lastLoggedIn: new Date()
+          isAdmin: user.isAdmin
           },
           process.env.JWT_SEC,
           { expiresIn: "3d" }
-        );
-        const { password, createdAt, updatedAt, __v, ...others } = user._doc;
-        res.status(200).json({ ...others, accessToken })
-      } else {
-        res.status(401).json("Incorrect Password");
-      }
-    })
+      )
+      user.lastLoggedIn = new Date()
+      await user.save()
+      const { password, createdAt, updatedAt, __v, ...others } = user._doc;
+      res.status(200).json({ ...others, accessToken })
+    } else {
+      res.status(401).json("Incorrect Password")
+    }
   } catch (err) {
     res.status(500).json(err);
   }
