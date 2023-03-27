@@ -1,9 +1,31 @@
 import jwt from "jsonwebtoken"
 import * as dotenv from 'dotenv'
 import Stripe from 'stripe'
+import multer from "multer"
+import nodemailer from "nodemailer"
 
 dotenv.config()
 const stripe = new Stripe(process.env.STRIPE_PRIVATE_KEY)
+
+var storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, 'uploads/')
+  },
+  filename: function (req, file, cb) {
+    /*Appending extension with original name*/
+    cb(null, file.originalname)
+  }
+})
+
+export var uploadFile = multer({ storage: storage })
+
+export const transporter = nodemailer.createTransport({
+  service: 'gmail',
+  auth: {
+    user: process.env.GMAIL_EMAIL,
+    pass: process.env.GMAIL_KEY
+  }
+})
 
 export const verifyToken = (req, res, next) => {
   const authHeader = req.headers.authorization;
@@ -41,15 +63,41 @@ export const verifyTokenAndAdmin = (req, res, next) => {
 
 export const createStripeCustomer = async (req) => {
   try {
-    const customer = await stripe.customers.create({
-      description: `Customer for MDHub- ${req.body.primaryUserData.email}`,
-      email: req.body.primaryUserData.email,
-      name: `${req.body.primaryUserData.firstName} ${req.body.primaryUserData.lastName}`,
-      payment_method: req.body.paymentMethod
+    // const customer = await stripe.customers.create({
+    //   description: `Customer for MDHub- ${req.body.primaryUserData.email}`,
+    //   email: req.body.primaryUserData.email,
+    //   name: `${req.body.primaryUserData.firstName} ${req.body.primaryUserData.lastName}`,
+    //   payment_method: req.body.paymentMethod
+    // })
+
+    const { email, name } = req.body
+
+    const paymentMethod = await stripe.paymentMethods.create({
+      type: 'card',
+      card: {
+        number: '4242424242424242',
+        exp_month: 12,
+        exp_year: 2030,
+        cvc: '123',
+      },
     })
+
+    console.log('Payment method created:', paymentMethod.id)
+
+    const customer = await stripe.customers.create({
+      description: "test customer for mdhub family monthly package",
+      email: email,
+      name: name,
+      payment_method: paymentMethod,
+      invoice_settings: {
+        default_payment_method: paymentMethod
+      }
+    })
+    console.log('Customer created:', customer.id)
     return customer
   } catch (error) {
-    throw new error(`Failed to create customer: ${error}`)
+    console.log(error)
+    throw error
   }
 }
 
@@ -70,7 +118,7 @@ export const confirmPaymentIntent = async (req, customerId) => {
     })
     return paymentIntent
   } catch (error) {
-    throw new error(`Failed to process payment: ${error}`)
+    throw error(`Failed to process payment: ${error}`)
   }
 }
 

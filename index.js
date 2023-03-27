@@ -5,33 +5,35 @@ import connectDatabase from './mongodb/connect.js'
 import authRoutes from './routes/auth.js'
 import userRoutes from './routes/userRoutes.js'
 import appointmentRoutes from './routes/appointmentRoutes.js'
+import stripeRoutes from './routes/stripeRoutes.js'
 import multer from "multer"
 import nodemailer from "nodemailer"
 import Stripe from "stripe"
+import { uploadFile, transporter } from './utils/utils.js'
 
 dotenv.config()
 
 const stripe = new Stripe(process.env.STRIPE_PRIVATE_KEY)
 
-var storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, 'uploads/')
-  },
-  filename: function (req, file, cb) {
-    /*Appending extension with original name*/
-    cb(null, file.originalname)
-  }
-})
+// var storage = multer.diskStorage({
+//   destination: function (req, file, cb) {
+//     cb(null, 'uploads/')
+//   },
+//   filename: function (req, file, cb) {
+//     /*Appending extension with original name*/
+//     cb(null, file.originalname)
+//   }
+// })
 
-var upload = multer({ storage: storage })
+// var upload = multer({ storage: storage })
 
-const transporter = nodemailer.createTransport({
-  service: 'gmail',
-  auth: {
-    user: process.env.GMAIL_EMAIL,
-    pass: process.env.GMAIL_KEY
-  }
-})
+// const transporter = nodemailer.createTransport({
+//   service: 'gmail',
+//   auth: {
+//     user: process.env.GMAIL_EMAIL,
+//     pass: process.env.GMAIL_KEY
+//   }
+// })
 
 const app = express()
 
@@ -44,42 +46,82 @@ app.use(cors())
 app.use('/api/v1/auth', authRoutes)
 app.use('/api/v1/users', userRoutes)
 app.use('/api/v1/appointments', appointmentRoutes)
+app.use('/api/v1/stripe', stripeRoutes)
 
 app.get('/', async (req, res) => {
   res.send("Hello from MD Hub")
 })
 
-app.post("/sendmail", upload.single('file'), (req, res) => {
+app.post("/sendmail", (req, res) => {
+  console.log(req.body)
+  // const mailOptions = {
+  //   from: 'asfandyar687@gmail.com',
+  //   to: 'abdul.rafeh118@gmail.com',
+  //   subject: 'Requisition Form',
+  //   html: `
+  //     <div>
+  //       <h2>Hello This is Lab Requisition Email for the user ${req.body.firstName}</h2>
+  //       <p>Here are the additional details:</p>
+  //       <ul>
+  //         <li>
+  //           Phone: ${req.body.phoneNumber}
+  //         </li>
+  //         <li>
+  //           preferredDate: ${req.body.preferredDate}
+  //         </li>
+  //         <li>
+  //           preferredTime: ${req.body.preferredTime}
+  //         </li>
+  //         <li>
+  //           email: ${req.body.emailAddress}
+  //         </li>
+  //       </ul>
+  //     </div>
+  //   `,
+  //   attachments: [{
+  //     filename: "requisition-form.jpg",
+  //     path: req.file.path
+  //   }]
+  // }
 
   const mailOptions = {
     from: 'asfandyar687@gmail.com',
-    to: 'hr@homesolutionsajk.shop',
+    to: 'abdul.rafeh118@gmail.com',
     subject: 'Requisition Form',
     html: `
       <div>
-        <h2>Hello This is Lab Requisition Email for the user ${req.body.firstName}</h2>
+        <h2>Hello This is Lab Requisition Email for the user ${req.body.diagnosticsFormData.firstName}</h2>
         <p>Here are the additional details:</p>
         <ul>
           <li>
-            Phone: ${req.body.phoneNumber}
+            Phone: ${req.body.diagnosticsFormData.phoneNumber}
           </li>
           <li>
-            preferredDate: ${req.body.preferredDate}
+            preferredDate: ${req.body.selectedDate}
           </li>
           <li>
-            preferredTime: ${req.body.preferredTime}
+            preferredTime: ${req.body.time}
           </li>
           <li>
-            email: ${req.body.emailAddress}
+            email: ${req.body.diagnosticsFormData.emailAddress}
+          </li>
+          <li>
+            address: ${req.body.address}
+          </li>
+          <li>
+            city: ${req.body.city}
+          </li>
+          <li>
+            city: ${req.body.province}
+          </li>
+          <li>
+            Custom Service: ${req.body.customNursingService}
           </li>
         </ul>
       </div>
-    `,
-    attachments: [{
-      filename: "requisition-form.jpg",
-      path: req.file.path
-    }]
+    `
   }
+
 
   transporter.sendMail(mailOptions, function (error, info) {
     if (error) {
