@@ -53,7 +53,6 @@ app.get('/', async (req, res) => {
 })
 
 app.post("/sendmail", (req, res) => {
-  console.log(req.body)
   // const mailOptions = {
   //   from: 'asfandyar687@gmail.com',
   //   to: 'abdul.rafeh118@gmail.com',
@@ -86,7 +85,7 @@ app.post("/sendmail", (req, res) => {
 
   const mailOptions = {
     from: 'asfandyar687@gmail.com',
-    to: 'abdul.rafeh118@gmail.com',
+    to: 'amir@cbstudio.ca',
     subject: 'Requisition Form',
     html: `
       <div>
