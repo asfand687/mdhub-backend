@@ -6,15 +6,13 @@ import * as util from "util"
 
 
 export const createAppointment = async (req, res) => {
-  console.log("I am working")
-  console.log(req.body)
   var mailOptions
   const sendMailAsync = util.promisify(transporter.sendMail).bind(transporter)
   if (!req.file) {
     console.log("No file uploaded")
     mailOptions = {
-      from: 'asfandyar687@gmail.com',
-      to: 'safiraja687@gmail.com',
+      from: 'mdhubtest@gmail.com',
+      to: 'amir@cbstudio.ca, safiraja687@gmail.com',
       subject: 'Requisition Form',
       html: `
       <div>
@@ -52,7 +50,7 @@ export const createAppointment = async (req, res) => {
   } else {
 
     mailOptions = {
-      from: 'asfandyar687@gmail.com',
+      from: 'mdhubtest@gmail.com',
       to: 'safiraja687@gmail.com',
       subject: 'Requisition Form',
       html: `
