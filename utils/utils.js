@@ -137,7 +137,7 @@ export const confirmAppointmentPaymentIntent = async (req, customerId, paymentMe
     })
     return paymentIntent
   } catch (error) {
-    throw new error(`Failed to process payment: ${error}`)
+    throw error(`Failed to process payment: ${error}`)
   }
 }
 
