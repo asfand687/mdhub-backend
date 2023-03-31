@@ -27,6 +27,181 @@ export const transporter = nodemailer.createTransport({
   }
 })
 
+export const nursingAppointmentMailOptionsWithoutAttachment = (req) => {
+  return {
+    from: 'mdhubtest@gmail.com',
+    to: 'amir@cbstudio.ca,safiraja687@gmail.com',
+    subject: 'Requisition Form',
+    html: `
+      <div>
+        <h2>Hello This is Lab Requisition Email for the user ${req.body.firstName} ${req.body.lastName}</h2>
+        <p>Here are the additional details:</p>
+        <ul>
+          <li>
+            Phone: ${req.body.phoneNumber}
+          </li>
+          <li>
+            Email: ${req.body.emailAddress}
+          </li>
+          <li>
+            Date: ${req.body.selectedDate}
+          </li>
+          <li>
+            Time: ${req.body.time}
+          </li>
+          <li>
+            Address: ${req.body.address}
+          </li>
+          <li>
+            City: ${req.body.city}
+          </li>
+          <li>
+            Province: ${req.body.province}
+          </li>
+          <li>
+            Custom Service: ${req.body.customNursingService}
+          </li>
+          <li>
+            Service Type: ${req.body.appointmentType}
+          </li>
+        </ul>
+      </div>
+      `
+  }
+}
+
+export const nursingAppointmentMailOptionsWithAttachment = (req) => {
+  return {
+    from: 'mdhubtest@gmail.com',
+    to: 'amir@cbstudio.ca,safiraja687@gmail.com',
+    subject: 'Requisition Form',
+    html: `
+      <div>
+        <h2>Hello This is Lab Requisition Email for the user ${req.body.firstName} ${req.body.lastName}</h2>
+        <p>Here are the additional details:</p>
+        <ul>
+          <li>
+            Phone: ${req.body.phoneNumber}
+          </li>
+          <li>
+            Email: ${req.body.emailAddress}
+          </li>
+          <li>
+            Date: ${req.body.selectedDate}
+          </li>
+          <li>
+            Time: ${req.body.time}
+          </li>
+          <li>
+            Address: ${req.body.address}
+          </li>
+          <li>
+            City: ${req.body.city}
+          </li>
+          <li>
+            Province: ${req.body.province}
+          </li>
+          <li>
+            Custom Service: ${req.body.customNursingService}
+          </li>
+          <li>
+            Service Type: ${req.body.appointmentType}
+          </li>
+        </ul>
+      </div>
+      `,
+    attachments: [{
+      filename: "requisition-form.jpg",
+      path: req.file.path
+    }]
+  }
+}
+
+export const diagnosticsAppointmentMailOptionsWithoutAttachment = (req) => {
+  return {
+    from: 'mdhubtest@gmail.com',
+    to: 'amir@cbstudio.ca,safiraja687@gmail.com',
+    subject: 'Requisition Form',
+    html: `
+      <div>
+        <h2>Hello This is Lab Requisition Email for the user ${req.body.firstName} ${req.body.lastName}</h2>
+        <p>Here are the additional details:</p>
+        <ul>
+          <li>
+            Phone: ${req.body.phoneNumber}
+          </li>
+          <li>
+            Email: ${req.body.emailAddress}
+          </li>
+          <li>
+            Date: ${req.body.selectedDate}
+          </li>
+          <li>
+            Time: ${req.body.time}
+          </li>
+          <li>
+            Address: ${req.body.address}
+          </li>
+          <li>
+            City: ${req.body.city}
+          </li>
+          <li>
+            Province: ${req.body.province}
+          </li>
+          <li>
+            Service Type: ${req.body.appointmentType}
+          </li>
+        </ul>
+      </div>
+      `
+  }
+}
+
+export const diagnosticsAppointmentMailOptionsWithAttachment = (req) => {
+  return {
+    from: 'mdhubtest@gmail.com',
+    to: 'amir@cbstudio.ca,safiraja687@gmail.com',
+    subject: 'Requisition Form',
+    html: `
+      <div>
+        <h2>Hello This is Lab Requisition Email for the user ${req.body.firstName} ${req.body.lastName}</h2>
+        <p>Here are the additional details:</p>
+        <ul>
+          <li>
+            Phone: ${req.body.phoneNumber}
+          </li>
+          <li>
+            Email: ${req.body.emailAddress}
+          </li>
+          <li>
+            Date: ${req.body.selectedDate}
+          </li>
+          <li>
+            Time: ${req.body.time}
+          </li>
+          <li>
+            Address: ${req.body.address}
+          </li>
+          <li>
+            City: ${req.body.city}
+          </li>
+          <li>
+            Province: ${req.body.province}
+          </li>
+          <li>
+            Service Type: ${req.body.appointmentType}
+          </li>
+        </ul>
+      </div>
+      `,
+    attachments: [{
+      filename: "requisition-form.jpg",
+      path: req.file.path
+    }]
+  }
+}
+
+
 export const verifyToken = (req, res, next) => {
   const authHeader = req.headers.authorization;
   if (authHeader) {
