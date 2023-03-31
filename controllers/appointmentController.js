@@ -1,6 +1,14 @@
 import Appointment from '../models/Appointment.js'
 import User from "../models/User.js"
-import { confirmAppointmentPaymentIntent, uploadFile, transporter } from '../utils/utils.js'
+import {
+  confirmAppointmentPaymentIntent,
+  uploadFile,
+  transporter,
+  nursingAppointmentMailOptionsWithAttachment,
+  nursingAppointmentMailOptionsWithoutAttachment,
+  diagnosticsAppointmentMailOptionsWithAttachment,
+  diagnosticsAppointmentMailOptionsWithoutAttachment
+} from '../utils/utils.js'
 import * as util from "util"
 
 
@@ -10,93 +18,19 @@ export const createAppointment = async (req, res) => {
   const sendMailAsync = util.promisify(transporter.sendMail).bind(transporter)
   if (!req.file) {
     console.log("No file uploaded")
-    mailOptions = {
-      from: 'mdhubtest@gmail.com',
-      to: 'amir@cbstudio.ca, safiraja687@gmail.com',
-      subject: 'Requisition Form',
-      html: `
-      <div>
-        <h2>Hello This is Lab Requisition Email for the user ${req.body.firstName} ${req.body.lastName}</h2>
-        <p>Here are the additional details:</p>
-        <ul>
-          <li>
-            Phone: ${req.body.phoneNumber}
-          </li>
-          <li>
-            email: ${req.body.emailAddress}
-          </li>
-          <li>
-            preferredDate: ${req.body.selectedDate}
-          </li>
-          <li>
-            preferredTime: ${req.body.time}
-          </li>
-          <li>
-            address: ${req.body.address}
-          </li>
-          <li>
-            city: ${req.body.city}
-          </li>
-          <li>
-            city: ${req.body.province}
-          </li>
-          <li>
-            Custom Service: ${req.body.customNursingService}
-          </li>
-        </ul>
-      </div>
-    `
-    }
+    mailOptions = req.body.appointmentType === "nursing" ?
+      nursingAppointmentMailOptionsWithoutAttachment(req) :
+      diagnosticsAppointmentMailOptionsWithoutAttachment(req)
   } else {
-
-    mailOptions = {
-      from: 'mdhubtest@gmail.com',
-      to: 'safiraja687@gmail.com',
-      subject: 'Requisition Form',
-      html: `
-      <div>
-        <h2>Hello This is Lab Requisition Email for the user ${req.body.firstName} ${req.body.lastName}</h2>
-        <p>Here are the additional details:</p>
-        <ul>
-          <li>
-            Phone: ${req.body.phoneNumber}
-          </li>
-          <li>
-            email: ${req.body.emailAddress}
-          </li>
-          <li>
-            preferredDate: ${req.body.selectedDate}
-          </li>
-          <li>
-            preferredTime: ${req.body.time}
-          </li>
-          <li>
-            address: ${req.body.address}
-          </li>
-          <li>
-            city: ${req.body.city}
-          </li>
-          <li>
-            city: ${req.body.province}
-          </li>
-          <li>
-            Custom Service: ${req.body.customNursingService}
-          </li>
-        </ul>
-      </div>
-    `,
-      attachments: [{
-        filename: "requisition-form.jpg",
-        path: req.file.path
-      }]
-    }
+    mailOptions = req.body.appointmentType === "nursing" ?
+      nursingAppointmentMailOptionsWithAttachment(req) :
+      diagnosticsAppointmentMailOptionsWithAttachment(req)
   }
-
 
   try {
     await confirmAppointmentPaymentIntent(req, req.body.customerId, req.body.paymentMethod, req.body.amount)
     if (confirmAppointmentPaymentIntent) {
-      const newAppointment = await new Appointment({
+      const newAppointment = new Appointment({
         date: req.body.selectedDate,
         userId: req.body.userId,
         time: req.body.time,
