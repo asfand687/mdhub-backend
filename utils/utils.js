@@ -28,11 +28,9 @@ export const transporter = nodemailer.createTransport({
 })
 
 export const nursingAppointmentMailOptionsWithoutAttachment = (req) => {
-  return {
-    from: 'mdhubtest@gmail.com',
-    to: 'amir@cbstudio.ca,safiraja687@gmail.com',
-    subject: 'Requisition Form',
-    html: `
+  var html
+  if (req.body.firstName && req.body.lastName && req.body.email) {
+    html = `
       <div>
         <h2>New Nursing & Homecare Request</h2>
         <p>Here are the additional details:</p>
@@ -69,7 +67,46 @@ export const nursingAppointmentMailOptionsWithoutAttachment = (req) => {
           </li>
         </ul>
       </div>
-      `
+    `
+  } else {
+    html = `
+      <div>
+        <h2>New Nursing & Homecare Request</h2>
+        <p>Here are the additional details:</p>
+        <ul>
+          <li>
+            Date: ${req.body.selectedDate}
+          </li>
+          <li>
+            Time: ${req.body.time}
+          </li>
+          <li>
+            Address: ${req.body.address}
+          </li>
+          <li>
+            City: ${req.body.city}
+          </li>
+          <li>
+            Province: ${req.body.province}
+          </li>
+          <li>
+            Postal Code: ${req.body.postalCode}
+          </li>
+          <li>
+            Custom Service: ${req.body.customNursingService}
+          </li>
+          <li>
+            Service Type: ${req.body.appointmentType}
+          </li>
+        </ul>
+      </div>
+    `
+  }
+  return {
+    from: 'mdhubtest@gmail.com',
+    to: 'amir@cbstudio.ca,safiraja687@gmail.com',
+    subject: 'Requisition Form',
+    html
   }
 }
 
