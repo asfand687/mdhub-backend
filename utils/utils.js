@@ -34,11 +34,11 @@ export const nursingAppointmentMailOptionsWithoutAttachment = (req) => {
     subject: 'Requisition Form',
     html: `
       <div>
-        <h2>Hello This is Lab Requisition Email for the user ${req.body.firstName} ${req.body.lastName}</h2>
+        <h2>New Nursing & Homecare Request</h2>
         <p>Here are the additional details:</p>
         <ul>
           <li>
-            Phone: ${req.body.phoneNumber}
+            Full Name: ${req.body.firstName} ${req.body.lastName}
           </li>
           <li>
             Email: ${req.body.emailAddress}
@@ -57,6 +57,9 @@ export const nursingAppointmentMailOptionsWithoutAttachment = (req) => {
           </li>
           <li>
             Province: ${req.body.province}
+          </li>
+          <li>
+            Postal Code: ${req.body.postalCode}
           </li>
           <li>
             Custom Service: ${req.body.customNursingService}
@@ -77,9 +80,12 @@ export const nursingAppointmentMailOptionsWithAttachment = (req) => {
     subject: 'Requisition Form',
     html: `
       <div>
-        <h2>Hello This is Lab Requisition Email for the user ${req.body.firstName} ${req.body.lastName}</h2>
+        <h2>New Nursing & Homecare Request</h2>
         <p>Here are the additional details:</p>
         <ul>
+          <li>
+            Full Name: ${req.body.firstName} ${req.body.lastName}
+          </li>
           <li>
             Phone: ${req.body.phoneNumber}
           </li>
@@ -100,6 +106,9 @@ export const nursingAppointmentMailOptionsWithAttachment = (req) => {
           </li>
           <li>
             Province: ${req.body.province}
+          </li>
+          <li>
+            Postal Code: ${req.body.postalCode}
           </li>
           <li>
             Custom Service: ${req.body.customNursingService}
@@ -124,9 +133,12 @@ export const diagnosticsAppointmentMailOptionsWithoutAttachment = (req) => {
     subject: 'Requisition Form',
     html: `
       <div>
-        <h2>Hello This is Lab Requisition Email for the user ${req.body.firstName} ${req.body.lastName}</h2>
+        <h2>New Lab Diagnostics Request</h2>
         <p>Here are the additional details:</p>
         <ul>
+          <li>
+            Full Name: ${req.body.firstName} ${req.body.lastName}
+          </li>
           <li>
             Phone: ${req.body.phoneNumber}
           </li>
@@ -147,6 +159,9 @@ export const diagnosticsAppointmentMailOptionsWithoutAttachment = (req) => {
           </li>
           <li>
             Province: ${req.body.province}
+          </li>
+          <li>
+            Postal Code: ${req.body.postalCode}
           </li>
           <li>
             Service Type: ${req.body.appointmentType}
@@ -164,9 +179,12 @@ export const diagnosticsAppointmentMailOptionsWithAttachment = (req) => {
     subject: 'Requisition Form',
     html: `
       <div>
-        <h2>Hello This is Lab Requisition Email for the user ${req.body.firstName} ${req.body.lastName}</h2>
+        <h2>New Lab Diagnostics Request</h2>
         <p>Here are the additional details:</p>
         <ul>
+          <li>
+            Full Name: ${req.body.firstName} ${req.body.lastName}
+          </li>
           <li>
             Phone: ${req.body.phoneNumber}
           </li>
@@ -187,6 +205,9 @@ export const diagnosticsAppointmentMailOptionsWithAttachment = (req) => {
           </li>
           <li>
             Province: ${req.body.province}
+          </li>
+          <li>
+            Postal Code: ${req.body.postalCode}
           </li>
           <li>
             Service Type: ${req.body.appointmentType}
