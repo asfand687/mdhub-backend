@@ -20,7 +20,7 @@ export const registerUser = async (req, res) => {
         customer: customer.id,
         items: [
           {
-            price: 'price_1Mk9IPHO2OahTS063tAXfNeY',
+            price: 'price_1MsuWeHO2OahTS06f0R7LIUC',
           },
         ],
         trial_period_days: 90,
@@ -33,7 +33,7 @@ export const registerUser = async (req, res) => {
         customer: customer.id,
         items: [
           {
-            price: 'price_1MkkROHO2OahTS06lSZncj1k',
+            price: 'price_1MsuY1HO2OahTS06PEoz5Dq2',
           },
         ],
         default_payment_method: req.body.paymentMethod,
