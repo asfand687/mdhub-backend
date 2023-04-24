@@ -321,9 +321,9 @@ export const createStripeCustomer = async (req) => {
       description: "test customer for mdhub family monthly package",
       email: email,
       name: name,
-      payment_method: paymentMethod.id,
+      payment_method: paymentMethod,
       invoice_settings: {
-        default_payment_method: paymentMethod.id
+        default_payment_method: paymentMethod
       }
     })
     console.log('Customer created:', customer.id)
