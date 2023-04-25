@@ -113,7 +113,7 @@ export const nursingAppointmentMailOptionsWithoutAttachment = (req) => {
 export const nursingAppointmentMailOptionsWithAttachment = (req) => {
   return {
     from: 'mdhubtest@gmail.com',
-    to: 'amir@cbstudio.ca,safiraja687@gmail.com',
+    to: 'info@mdhub.ca',
     subject: 'Requisition Form',
     html: `
       <div>
@@ -166,7 +166,7 @@ export const nursingAppointmentMailOptionsWithAttachment = (req) => {
 export const diagnosticsAppointmentMailOptionsWithoutAttachment = (req) => {
   return {
     from: 'mdhubtest@gmail.com',
-    to: 'amir@cbstudio.ca,safiraja687@gmail.com',
+    to: 'info@mdhub.ca',
     subject: 'Requisition Form',
     html: `
       <div>
@@ -212,7 +212,7 @@ export const diagnosticsAppointmentMailOptionsWithoutAttachment = (req) => {
 export const diagnosticsAppointmentMailOptionsWithAttachment = (req) => {
   return {
     from: 'mdhubtest@gmail.com',
-    to: 'amir@cbstudio.ca,safiraja687@gmail.com',
+    to: 'info@mdhub.ca',
     subject: 'Requisition Form',
     html: `
       <div>
@@ -295,37 +295,27 @@ export const verifyTokenAndAdmin = (req, res, next) => {
 };
 
 export const createStripeCustomer = async (req) => {
+  
   try {
-    // const customer = await stripe.customers.create({
-    //   description: `Customer for MDHub- ${req.body.primaryUserData.email}`,
-    //   email: req.body.primaryUserData.email,
-    //   name: `${req.body.primaryUserData.firstName} ${req.body.primaryUserData.lastName}`,
-    //   payment_method: req.body.paymentMethod
-    // })
-
-    const { email, name } = req.body
-
-    const paymentMethod = await stripe.paymentMethods.create({
-      type: 'card',
-      card: {
-        number: '4242424242424242',
-        exp_month: 12,
-        exp_year: 2030,
-        cvc: '123',
-      },
-    })
-
-    console.log('Payment method created:', paymentMethod.id)
-
     const customer = await stripe.customers.create({
-      description: "test customer for mdhub family monthly package",
-      email: email,
-      name: name,
-      payment_method: paymentMethod,
+      description: `Customer for MDHub- ${req.body.primaryUserData.email}`,
+      email: req.body.primaryUserData.email,
+      name: `${req.body.primaryUserData.firstName} ${req.body.primaryUserData.lastName}`,
+      payment_method: req.body.paymentMethod,
       invoice_settings: {
-        default_payment_method: paymentMethod
+        default_payment_method: req.body.paymentMethod
       }
     })
+
+    // const customer = await stripe.customers.create({
+    //   description: "test customer for mdhub family monthly package",
+    //   email: email,
+    //   name: name,
+    //   payment_method: paymentMethod,
+    //   invoice_settings: {
+    //     default_payment_method: paymentMethod
+    //   }
+    // })
     console.log('Customer created:', customer.id)
     return customer
   } catch (error) {
@@ -365,7 +355,7 @@ export const confirmAppointmentPaymentIntent = async (req, customerId, paymentMe
       setup_future_usage: "on_session",
       confirm: true,
       metadata: {
-        description: `description for ${req.body.service}`
+        description: `description for MdHub ${req.body.primaryUserData.accountType} ${req.body.primaryUserData.paymentMode} package`
       },
     })
     return paymentIntent

@@ -96,6 +96,8 @@ export const createSubscriptionsForNewUser = async (req, res) => {
         cvc: '225',
       },
     })
+    
+    console.log("STRIPE CONTROLLER")
 
     console.log("payment method created: ", paymentMethod.id)
 
