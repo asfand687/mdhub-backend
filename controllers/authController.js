@@ -510,9 +510,6 @@ export const registerUser = async (req, res) => {
       }
     }
 
-    if (accountType === "on demand") {
-      await confirmPaymentIntent(req, customer.id)
-    }
     res.status(200).json({ ...others })
   } catch (err) {
     console.log(err)
