@@ -11,7 +11,7 @@ router.route('/get_users_payment_info').get(getUsersWithLatestPayment)
 router.route('/get_user_info').get(getNewUserAndDeletedUserData)
 
 //Get User
-router.route('/:id').get(verifyTokenAndAdmin, getUser)
+router.route('/:id').get(getUser)
 
 //Get All Users
 router.route('/').get(getAllUsers)
