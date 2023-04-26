@@ -13,12 +13,14 @@ const stripe = new Stripe(process.env.STRIPE_PRIVATE_KEY)
 export const getUser = async (req, res) => {
   try {
     const user = await User.findById(req.params.id).populate("childAccounts")
-    let paymentInfo = {}
-    if (!user.isAdmin && user.stripeCustomerId !== "test") {
-      paymentInfo = user.stripeCustomerId ? await getPaymentInfo(user.stripeCustomerId) : ""
-    }
-    const userInfo = user._doc;
-    res.status(200).json({ paymentInfo, userInfo });
+    console.log(user)
+    // let paymentInfo = {}
+    // if (!user.isAdmin && user.stripeCustomerId !== "test") {
+    //   paymentInfo = user.stripeCustomerId ? await getPaymentInfo(user.stripeCustomerId) : ""
+    // }
+    // console.log(paymentInfo)
+    // const userInfo = user;
+    res.status(200).json(user);
   } catch (error) {
     res.status(500).json(error);
   }
