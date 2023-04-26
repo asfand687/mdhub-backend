@@ -97,9 +97,6 @@ export const createSubscriptionsForNewUser = async (req, res) => {
       },
     })
     
-    console.log("STRIPE CONTROLLER")
-
-    console.log("payment method created: ", paymentMethod.id)
 
     // create a new customer based on information provided in the body
     const customer = await stripe.customers.create({
