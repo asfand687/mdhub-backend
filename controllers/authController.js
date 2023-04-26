@@ -51,7 +51,7 @@ export const registerUser = async (req, res) => {
           const newPrice = await stripe.prices.create({
             product: productId,
             unit_amount: req.body.totalAmount, 
-            currency: 'usd', 
+            currency: 'cad', 
             recurring: { interval: 'month' },
             nickname: 'MdHub Individual Monthly package', 
           });
@@ -94,7 +94,7 @@ export const registerUser = async (req, res) => {
           const newPrice = await stripe.prices.create({
             product: existingProduct.id,
             unit_amount: req.body.totalAmount, 
-            currency: 'usd', 
+            currency: 'cad', 
             recurring: { interval: 'month' },
             nickname: 'MdHub Individual Monthly package', 
           });
@@ -150,7 +150,7 @@ export const registerUser = async (req, res) => {
           const newPrice = await stripe.prices.create({
             product: productId,
             unit_amount: req.body.totalAmount, 
-            currency: 'usd', 
+            currency: 'cad', 
             recurring: { interval: 'year' },
             nickname: 'MdHub Individual Yearly package', 
           });
@@ -187,7 +187,7 @@ export const registerUser = async (req, res) => {
           const newPrice = await stripe.prices.create({
             product: existingProduct.id,
             unit_amount: req.body.totalAmount, 
-            currency: 'usd', 
+            currency: 'cad', 
             recurring: { interval: 'year' },
             nickname: 'MdHub Individual Yearly package', 
           });
@@ -242,7 +242,7 @@ export const registerUser = async (req, res) => {
           const newPrice = await stripe.prices.create({
             product: productId,
             unit_amount: req.body.totalAmount, 
-            currency: 'usd', 
+            currency: 'cad', 
             recurring: { interval: 'month' },
             nickname: `MdHub Family Monthly package for ${req.body.childUsersData.length + 1} members`, 
           });
@@ -284,7 +284,7 @@ export const registerUser = async (req, res) => {
           const newPrice = await stripe.prices.create({
             product: existingProduct.id,
             unit_amount: req.body.totalAmount, 
-            currency: 'usd', 
+            currency: 'cad', 
             recurring: { interval: 'month' },
             nickname: `MdHub Family Monthly package for ${req.body.childUsersData.length + 1} members`, 
           });
@@ -339,7 +339,7 @@ export const registerUser = async (req, res) => {
           const newPrice = await stripe.prices.create({
             product: productId,
             unit_amount: parseInt(req.body.totalAmount), 
-            currency: 'usd', 
+            currency: 'cad', 
             recurring: { interval: 'year' },
             nickname: `MdHub Family Yearly package for ${req.body.childUsersData.length + 1} members`, 
           });
@@ -375,7 +375,7 @@ export const registerUser = async (req, res) => {
           const newPrice = await stripe.prices.create({
             product: existingProduct.id,
             unit_amount: parseInt(req.body.totalAmount), 
-            currency: 'usd', 
+            currency: 'cad', 
             recurring: { interval: 'year' },
             nickname: `MdHub Family Yearly package for ${req.body.childUsersData.length + 1} members`, 
           });
@@ -427,7 +427,7 @@ export const registerUser = async (req, res) => {
           const newPrice = await stripe.prices.create({
             product: productId,
             unit_amount: parseInt(req.body.totalAmount), 
-            currency: 'usd', 
+            currency: 'cad', 
             recurring: { interval: 'year' },
             nickname: `MdHub Corporate package for ${req.body.childUsersData.length + 1} members`, 
           });
@@ -463,7 +463,7 @@ export const registerUser = async (req, res) => {
           const newPrice = await stripe.prices.create({
             product: existingProduct.id,
             unit_amount: parseInt(req.body.totalAmount), 
-            currency: 'usd', 
+            currency: 'cad', 
             recurring: { interval: 'year' },
             nickname: `MdHub Corporate package for ${req.body.childUsersData.length + 1} members`, 
           });
