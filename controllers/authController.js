@@ -15,6 +15,35 @@ export const registerUser = async (req, res) => {
     const { accountType, paymentMode } = req.body.primaryUserData    
     const customer = await createStripeCustomer(req)
     
+    const code = await Code.findOne({ isAssigned: false })
+
+    const newUser = new User({
+      ...req.body.primaryUserData,
+      password: bcrypt.hashSync(req.body.primaryUserData.password, 10),
+      stripeCustomerId: customer.id,
+      loginCode: code.code
+    });
+    code.isAssigned = true
+    code.userId = newUser._id
+    await code.save()
+    const savedUser = await newUser.save()
+
+    // Saving Child Accounts
+    if (req.body.childUsersData) {
+      for (const childAccount of req.body.childUsersData.filter(Boolean)) {
+        const newChildAccount = new ChildAccount({
+          ...childAccount,
+          password: bcrypt.hashSync(childAccount.password, 10),
+          parentAccountId: savedUser._id
+        });
+        const savedChildAccount = await newChildAccount.save();
+        savedUser.childAccounts.push(savedChildAccount._id)
+      }
+      await savedUser.save()
+    }
+
+    const { password, ...others } = savedUser._doc;
+
     if (accountType === "individual" && paymentMode === "monthly") {
       const products = await stripe.products.list({ active: true})
       const existingProduct = products.data.find(product => product.name === "MdHub Individual package")
@@ -484,36 +513,6 @@ export const registerUser = async (req, res) => {
     if (accountType === "on demand") {
       await confirmPaymentIntent(req, customer.id)
     }
-
-
-    const code = await Code.findOne({ isAssigned: false })
-
-    const newUser = new User({
-      ...req.body.primaryUserData,
-      password: bcrypt.hashSync(req.body.primaryUserData.password, 10),
-      stripeCustomerId: customer.id,
-      loginCode: code.code
-    });
-    code.isAssigned = true
-    code.userId = newUser._id
-    await code.save()
-    const savedUser = await newUser.save()
-
-    // Saving Child Accounts
-    if (req.body.childUsersData) {
-      for (const childAccount of req.body.childUsersData.filter(Boolean)) {
-        const newChildAccount = new ChildAccount({
-          ...childAccount,
-          password: bcrypt.hashSync(childAccount.password, 10),
-          parentAccountId: savedUser._id
-        });
-        const savedChildAccount = await newChildAccount.save();
-        savedUser.childAccounts.push(savedChildAccount._id)
-      }
-      await savedUser.save()
-    }
-
-    const { password, ...others } = savedUser._doc;
     res.status(200).json({ ...others })
   } catch (err) {
     console.log(err)
