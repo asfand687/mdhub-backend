@@ -48,14 +48,14 @@ export const makeOnDemandPayment = async (req, res) => {
         setup_future_usage: "on_session",
         confirm: true,
         metadata: {
-          firstName: userfirstName,
-          lastName: userlastName,
-          email: useremail,
+          firstName: user.firstName,
+          lastName: user.lastName,
+          email: user.email,
         },
       })
       user.consultationFeePaid = true
       await user.save()
-      res.status(200).json("Payment Succesful!")
+      res.status(200).json(user)
   }
   } catch (error) {
     console.log(error)
