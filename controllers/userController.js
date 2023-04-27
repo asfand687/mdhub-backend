@@ -32,7 +32,7 @@ export const makeOnDemandPayment = async (req, res) => {
     const user = await User.findById(userId)
     if(user) {
       const customer = await stripe.customers.create({
-        description: `Customer for MDHub- ${req.body.user.email}`,
+        description: `Customer for MDHub- ${user.email}`,
         email: user.email,
         name: `${user.firstName} ${user.lastName}`,
         payment_method: paymentMethod,
@@ -59,7 +59,7 @@ export const makeOnDemandPayment = async (req, res) => {
   }
   } catch (error) {
     console.log(error)
-    res.status(400).json(error)
+    res.status(400).json({message: "Could Not Complete the payment", error: error.message})
   }
 }
 
