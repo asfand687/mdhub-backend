@@ -25,6 +25,8 @@ export const registerUser = async (req, res) => {
     });
     if(accountType === "on demand") {
       newUser.consultationFeePaid = false
+    } else {
+      newUser.consultationFeePaid = true
     }
     code.isAssigned = true
     code.userId = newUser._id

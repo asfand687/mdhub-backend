@@ -22,7 +22,7 @@ const User = new mongoose.Schema({
   stripeCustomerId: { type: String, required: true },
   isAdmin: { type: Boolean, default: false },
   lastLoggedIn: { type: Date },
-  consultationFeePaid: { type: Boolean, default: true }
+  consultationFeePaid: { type: Boolean }
 }, 
 { timestamps: true }
 )
