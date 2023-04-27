@@ -4,7 +4,7 @@ import Code from "../models/Code.js"
 import ChildAccount from "../models/ChildAccount.js"
 import Appointment from "../models/Appointment.js"
 import bcrypt from "bcrypt"
-import { getPaymentInfo, updatePaymentMethod } from "../utils/utils.js"
+import { confirmPaymentIntent, getPaymentInfo, updatePaymentMethod } from "../utils/utils.js"
 import Stripe from 'stripe'
 import * as dotenv from 'dotenv'
 dotenv.config()
@@ -13,7 +13,7 @@ const stripe = new Stripe(process.env.STRIPE_PRIVATE_KEY)
 export const getUser = async (req, res) => {
   try {
     const user = await User.findById(req.params.id).populate("childAccounts")
-    console.log(user)
+    console.log(user.consultationFeePaid)
     // let paymentInfo = {}
     // if (!user.isAdmin && user.stripeCustomerId !== "test") {
     //   paymentInfo = user.stripeCustomerId ? await getPaymentInfo(user.stripeCustomerId) : ""
@@ -23,6 +23,43 @@ export const getUser = async (req, res) => {
     res.status(200).json(user);
   } catch (error) {
     res.status(500).json(error);
+  }
+}
+
+export const makeOnDemandPayment = async (req, res) => {
+  const {userId, amount, paymentMethod} = req.body
+  try {
+    const user = await User.findById(userId)
+    if(user) {
+      const customer = await stripe.customers.create({
+        description: `Customer for MDHub- ${req.body.user.email}`,
+        email: user.email,
+        name: `${user.firstName} ${user.lastName}`,
+        payment_method: paymentMethod,
+        invoice_settings: {
+          default_payment_method: paymentMethod
+        }
+      })
+      await stripe.paymentIntents.create({
+        amount: amount, // Replace with the amount you want to charge in cents
+        currency: 'cad', // Replace with your preferred currency,
+        payment_method: paymentMethod,
+        customer: customer.id,
+        setup_future_usage: "on_session",
+        confirm: true,
+        metadata: {
+          firstName: userfirstName,
+          lastName: userlastName,
+          email: useremail,
+        },
+      })
+      user.consultationFeePaid = true
+      await user.save()
+      res.status(200).json("Payment Succesful!")
+  }
+  } catch (error) {
+    console.log(error)
+    res.status(400).json(error)
   }
 }
 
