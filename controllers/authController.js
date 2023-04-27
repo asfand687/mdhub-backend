@@ -23,6 +23,9 @@ export const registerUser = async (req, res) => {
       stripeCustomerId: customer.id,
       loginCode: code.code
     });
+    if(accountType === "on demand") {
+      newUser.consultationFeePaid = false
+    }
     code.isAssigned = true
     code.userId = newUser._id
     await code.save()
