@@ -326,20 +326,25 @@ export const createStripeCustomer = async (req) => {
 
 export const confirmPaymentIntent = async (req, customerId) => {
   try {
-    const paymentIntent = await stripe.paymentIntents.create({
-      amount: req.body.totalAmount, // Replace with the amount you want to charge in cents
-      currency: 'cad', // Replace with your preferred currency,
-      payment_method: req.body.paymentMethod,
-      customer: customerId,
-      setup_future_usage: "on_session",
-      confirm: true,
-      metadata: {
-        firstName: req.body.primaryUserData.firstName,
-        lastName: req.body.primaryUserData.lastName,
-        email: req.body.primaryUserData.email,
-      },
-    })
-    return paymentIntent
+    if(req.body.totalAmount) {
+      const paymentIntent = await stripe.paymentIntents.create({
+        amount: req.body.totalAmount, // Replace with the amount you want to charge in cents
+        currency: 'cad', // Replace with your preferred currency,
+        payment_method: req.body.paymentMethod,
+        customer: customerId,
+        setup_future_usage: "on_session",
+        confirm: true,
+        metadata: {
+          firstName: req.body.primaryUserData.firstName,
+          lastName: req.body.primaryUserData.lastName,
+          email: req.body.primaryUserData.email,
+        },
+      })
+      return true
+    } else {
+      return
+    }
+    
   } catch (error) {
     throw error(`Failed to process payment: ${error}`)
   }
@@ -349,7 +354,7 @@ export const confirmAppointmentPaymentIntent = async (req, customerId, paymentMe
   try {
     const paymentIntent = await stripe.paymentIntents.create({
       amount: amount, // Replace with the amount you want to charge in cents
-      currency: 'usd', // Replace with your preferred currency,
+      currency: 'cad', // Replace with your preferred currency,
       payment_method: paymentMethod,
       customer: customerId,
       setup_future_usage: "on_session",
