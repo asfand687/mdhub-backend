@@ -174,6 +174,7 @@ export const registerUser = async (req, res) => {
           // Create subscription with existing price ID
           const subscription = await stripe.subscriptions.create({
             customer: customer.id, 
+            coupon: req.body.couponCode,
             items: [{ price: existingPrice.id }],
           });
   
@@ -196,6 +197,7 @@ export const registerUser = async (req, res) => {
           const subscription = await stripe.subscriptions.create({
             customer: customer.id, 
             items: [{ price: newPriceId }],
+            coupon: req.body.couponCode,
           });
   
           console.log('Subscription created with newly created price ID:', subscription);
@@ -212,6 +214,7 @@ export const registerUser = async (req, res) => {
           const subscription = await stripe.subscriptions.create({
             customer: customer.id, 
             items: [{ price: existingPrice.id }],
+            coupon: req.body.couponCode,
           });
   
           console.log('Subscription created with existing price ID:', subscription);
@@ -233,6 +236,7 @@ export const registerUser = async (req, res) => {
           const subscription = await stripe.subscriptions.create({
             customer: customer.id, 
             items: [{ price: newPriceId }],
+            coupon: req.body.couponCode,
           });
   
           console.log('Subscription created with newly created price ID:', subscription);
@@ -364,6 +368,7 @@ export const registerUser = async (req, res) => {
           const subscription = await stripe.subscriptions.create({
             customer: customer.id, 
             items: [{ price: existingPrice.id }],
+            coupon: req.body.couponCode,
           });
   
           console.log('Subscription created with existing price ID:', subscription);
@@ -385,6 +390,7 @@ export const registerUser = async (req, res) => {
           const subscription = await stripe.subscriptions.create({
             customer: customer.id, 
             items: [{ price: newPriceId }],
+            coupon: req.body.couponCode,
           });
   
           console.log('Subscription created with newly created price ID:', subscription);
@@ -421,6 +427,7 @@ export const registerUser = async (req, res) => {
           const subscription = await stripe.subscriptions.create({
             customer: customer.id, 
             items: [{ price: newPriceId }],
+            coupon: req.body.couponCode,
           });
           console.log('Subscription created with newly created price ID:', subscription);
         }
@@ -452,6 +459,7 @@ export const registerUser = async (req, res) => {
           const subscription = await stripe.subscriptions.create({
             customer: customer.id, 
             items: [{ price: existingPrice.id }],
+            coupon: req.body.couponCode,
           });
   
           console.log('Subscription created with existing price ID:', subscription);
@@ -473,6 +481,7 @@ export const registerUser = async (req, res) => {
           const subscription = await stripe.subscriptions.create({
             customer: customer.id, 
             items: [{ price: newPriceId }],
+            coupon: req.body.couponCode,
           });
   
           console.log('Subscription created with newly created price ID:', subscription);
@@ -509,6 +518,7 @@ export const registerUser = async (req, res) => {
           const subscription = await stripe.subscriptions.create({
             customer: customer.id, 
             items: [{ price: newPriceId }],
+            coupon: req.body.couponCode,
           });
           console.log('Subscription created with newly created price ID:', subscription);
         }
