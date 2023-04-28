@@ -153,6 +153,28 @@ app.post("/get-billing-info", async (req, res) => {
   }
 })
 
+app.post("/check_coupon_code", async(req, res) => {
+  const {couponCode} = req.body
+  console.log(req.body)
+  try {
+    const existingCoupon = await stripe.coupons.retrieve(couponCode)
+    console.log(existingCoupon)
+    if(existingCoupon) {
+      console.log(existingCoupon)
+      res.status(200).json(existingCoupon)
+    } else {
+      res.status(400).json("Coupon Not Found")
+    }
+  } catch (error) {
+    if(error.type === "StripeInvalidRequestError") {
+      return res.status(400).json("Coupon Not Found")
+    } else {
+      res.status(400).json(error)
+    }
+    
+  }
+})
+
 const startServer = async () => {
   try {
     connectDatabase(process.env.MONGODB_URI)
