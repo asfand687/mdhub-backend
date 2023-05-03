@@ -3,6 +3,7 @@ import Code from "../models/Code.js"
 import ChildAccount from "../models/ChildAccount.js"
 import bcrypt from "bcrypt"
 import jwt from "jsonwebtoken"
+import nodemailer from "nodemailer"
 import { createStripeCustomer, confirmPaymentIntent, confirmAppointmentPaymentIntent, transporter, forgotPasswordMail } from "../utils/utils.js"
 import Stripe from 'stripe'
 import * as dotenv from 'dotenv'
@@ -568,15 +569,33 @@ export const loginUser = async (req, res) => {
 }
 
 export const forgotPassword = async (req, res) => {
-  console.log("Forgot Password")
+  const transporter = nodemailer.createTransport({
+    service: 'gmail',
+    auth: {
+      user: process.env.GMAIL_EMAIL,
+      pass: process.env.GMAIL_KEY
+    }
+  })
   try {
     const user = await User.findOne({email: req.body.email})
     if(!user) {
       return res.status(400).json("User Not Found")
     }
-    const sendMailAsync = util.promisify(transporter.sendMail).bind(transporter)
-    const mailOptions = forgotPasswordMail(req, user)
-    const info = await sendMailAsync(mailOptions)
+    const mailOptions = {
+      from: 'mdhubtest@gmail.com',
+      to: req.body.email,
+      subject: 'Forgot Password',
+      html: `
+        <div>
+          <h2>Forgot Password?</h2>
+          <p>Click this link to reset your password/p>
+          <div>
+            <a href="https://mdhub.ca/reset-password/${user._id}">Reset Password Page</a>
+          </div>
+        </div>
+        `
+    }
+    const info = await transporter.sendMail(mailOptions)
     console.log('Email sent: ' + info.response)
     res.status(201).json({ success: true, message: 'Email sent to the user for password update' })
   } catch (error) {
