@@ -190,24 +190,41 @@ export const getNewUserAndDeletedUserData = async (req, res) => {
 export const getUsersWithLatestPayment = async (req, res) => {
   try {
     const users = await User.find()
+    console.log(users)
     var latestPayment
+    // const usersWithLatestPayment = await Promise.all(users.map(async user => {
+    //   if (user.stripeCustomerId === "test") {
+    //     latestPayment = { data: [{ amount: 0, date: new Date() }] }
+    //   } else {
+    //     latestPayment = await stripe.paymentIntents.list({
+    //       customer: user.stripeCustomerId,
+    //       limit: 1
+    //     }) 
+    //   }
+    //   return {
+    //     ...user.toJSON(),
+    //     latestPayment: {
+    //       amount: latestPayment?.data[0]?.amount || null,
+    //       date: latestPayment?.data[0]?.created || null
+    //     }
+    //   }
+    // }))
     const usersWithLatestPayment = await Promise.all(users.map(async user => {
-      if (user.stripeCustomerId === "test") {
-        latestPayment = { data: [{ amount: 0, date: new Date() }] }
-      } else {
+      if(user.stripeCustomerId !== "test") {
         latestPayment = await stripe.paymentIntents.list({
           customer: user.stripeCustomerId,
           limit: 1
         }) 
-      }
-      return {
-        ...user.toJSON(),
-        latestPayment: {
-          amount: latestPayment?.data[0]?.amount || null,
-          date: latestPayment?.data[0]?.created || null
+        return {
+          ...user.toJSON(),
+          latestPayment: {
+            amount: latestPayment?.data[0]?.amount || null,
+            date: latestPayment?.data[0]?.created || null
+          }
         }
       }
     }))
+    console.log(usersWithLatestPayment)
     res.status(200).json(usersWithLatestPayment)
   } catch (error) {
     console.error(error);
