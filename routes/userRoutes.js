@@ -23,7 +23,7 @@ router.route('/:id').delete(deleteUser)
 router.route("/make_on_demand_payment").post(makeOnDemandPayment)
 
 // Update User
-router.route("/:id").put(verifyToken, updateUser)
+router.route("/:id").put(updateUser)
 
 // Update Code
 router.route("/updateCode/:userId").put(updateCodeForUser)

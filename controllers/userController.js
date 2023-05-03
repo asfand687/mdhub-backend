@@ -237,6 +237,7 @@ export const getUsersWithLatestPayment = async (req, res) => {
 
 
 export const updateUser = async (req, res) => {
+  
   try {
     if (req.body.paymentMethod) {
       const attachedPaymentMethod = await updatePaymentMethod(req.body.customerId, req.body.paymentMethod)

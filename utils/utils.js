@@ -209,6 +209,23 @@ export const diagnosticsAppointmentMailOptionsWithoutAttachment = (req) => {
   }
 }
 
+export const forgotPasswordMail = (req, user) => {
+  return {
+    from: 'mdhubtest@gmail.com',
+    to: req.body.email,
+    subject: 'Forgot Password',
+    html: `
+      <div>
+        <h2>Forgot Password?</h2>
+        <p>Click this link to reset your password/p>
+        <div>
+          <a href="https://mdhub.ca/reset-password/${user._id}">Reset Password Page</a>
+        </div>
+      </div>
+      `
+  }
+}
+
 export const diagnosticsAppointmentMailOptionsWithAttachment = (req) => {
   return {
     from: 'mdhubtest@gmail.com',

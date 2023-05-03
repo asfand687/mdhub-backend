@@ -3,7 +3,7 @@ import Code from "../models/Code.js"
 import ChildAccount from "../models/ChildAccount.js"
 import bcrypt from "bcrypt"
 import jwt from "jsonwebtoken"
-import { createStripeCustomer, confirmPaymentIntent, confirmAppointmentPaymentIntent } from "../utils/utils.js"
+import { createStripeCustomer, confirmPaymentIntent, confirmAppointmentPaymentIntent, transporter, forgotPasswordMail } from "../utils/utils.js"
 import Stripe from 'stripe'
 import * as dotenv from 'dotenv'
 dotenv.config()
@@ -565,6 +565,22 @@ export const loginUser = async (req, res) => {
     res.status(500).json(err);
   }
 
+}
+
+export const forgotPassword = async (req, res) => {
+  try {
+    const user = await User.findOne({email: req.body.email})
+    if(!user) {
+      return res.status(400).json("User Not Found")
+    }
+    const sendMailAsync = util.promisify(transporter.sendMail).bind(transporter)
+    const mailOptions = forgotPasswordMail(req, user)
+    const info = await sendMailAsync(mailOptions)
+    console.log('Email sent: ' + info.response)
+    res.status(201).json({ success: true, message: 'Appointment added successfully' })
+  } catch (error) {
+    res.status(500).json(error)
+  }
 }
 
 
