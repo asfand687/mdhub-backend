@@ -568,6 +568,7 @@ export const loginUser = async (req, res) => {
 }
 
 export const forgotPassword = async (req, res) => {
+  console.log("Forgot Password")
   try {
     const user = await User.findOne({email: req.body.email})
     if(!user) {
@@ -577,7 +578,7 @@ export const forgotPassword = async (req, res) => {
     const mailOptions = forgotPasswordMail(req, user)
     const info = await sendMailAsync(mailOptions)
     console.log('Email sent: ' + info.response)
-    res.status(201).json({ success: true, message: 'Appointment added successfully' })
+    res.status(201).json({ success: true, message: 'Email sent to the user for password update' })
   } catch (error) {
     res.status(500).json(error)
   }
