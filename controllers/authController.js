@@ -54,13 +54,12 @@ export const registerUser = async (req, res) => {
     const { password, ...others } = savedUser._doc;
 
     //  for on demand user
-    if (accountType === "on demand") {
-      try {
-        const mailOptions = {
-          from: "asfandyar687@gmail.com",
-          to: email,
-          subject: "Welcome to MDHUB",
-          html: `
+
+    const mailOptions = {
+      from: "asfandyar687@gmail.com",
+      to: email,
+      subject: "Welcome to MDHUB",
+      html: `
       <!doctype html>
       <html lang="en" xmlns="http://www.w3.org/1999/xhtml" xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office">
       <head>
@@ -145,22 +144,17 @@ export const registerUser = async (req, res) => {
       </body>
       </html>
       `,
-        };
+    };
 
-        transporter.sendMail(mailOptions, function (error, info) {
-          if (error) {
-            console.log(error);
-          } else {
-            console.log("Email sent: " + info.response);
-            // do something useful
-            res.status(200).json("Email Sent Successfully");
-          }
-        });
-        // res.status(201).json("sent");
-      } catch (err) {
-        console.log(err);
+    transporter.sendMail(mailOptions, function (error, info) {
+      if (error) {
+        console.log(error);
+      } else {
+        console.log("Email sent: " + info.response);
+        // do something useful
+        res.status(200).json("Email Sent Successfully");
       }
-    }
+    });
 
     if (accountType === "individual" && paymentMode === "monthly") {
       const products = await stripe.products.list({ active: true });
