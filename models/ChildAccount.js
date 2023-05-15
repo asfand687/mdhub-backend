@@ -6,6 +6,7 @@ const ChildAccount = new mongoose.Schema({
   email: { type: String, required: true },
   password: { type: String },
   phone: { type: String, required: true },
+  dateOfBirth: { type: String },
   isChildUser: { type: Boolean, default: true },
   parentAccountId: { type: mongoose.Types.ObjectId, ref: "User", required: true },
 },
