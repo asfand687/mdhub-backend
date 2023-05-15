@@ -5,6 +5,7 @@ import connectDatabase from "./mongodb/connect.js";
 import authRoutes from "./routes/auth.js";
 import userRoutes from "./routes/userRoutes.js";
 import appointmentRoutes from "./routes/appointmentRoutes.js";
+import adminRoutes from './routes/adminRoutes.js'
 import stripeRoutes from "./routes/stripeRoutes.js";
 import multer from "multer";
 import nodemailer from "nodemailer";
@@ -47,6 +48,7 @@ app.use("/api/v1/auth", authRoutes);
 app.use("/api/v1/users", userRoutes);
 app.use("/api/v1/appointments", appointmentRoutes);
 app.use("/api/v1/stripe", stripeRoutes);
+app.use("/api/v1/admin", adminRoutes)
 
 app.get("/", async (req, res) => {
   res.send("Hello from MD Hub");
