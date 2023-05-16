@@ -11,6 +11,8 @@ const User = new mongoose.Schema({
   dateOfBirth: { type: String },
   address: { type: String },
   country: { type: String },
+  childAccountCreationLink: { type: String },
+  companyName: { type: String },
   city: { type: String },
   region: { type: String },
   postalCode: { type: String },
