@@ -20,6 +20,9 @@ export const registerCorporateUser = async (req, res) => {
   
   try {
     const newUser = new User({...req.body, password: bcrypt.hashSync(req.body.password, 10)})
+    newUser.childAccountCreationLink = `https://mdhub.ca/add-child-account/${newUser._id}`
+    const code = await Code.findOne({ isAssigned: false });
+    newUser.loginCode = code.code
     const savedUser = await newUser.save()
     const { password, ...others } = savedUser._doc;
     res.status(200).json({...others})
