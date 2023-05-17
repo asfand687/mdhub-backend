@@ -39,6 +39,7 @@ export const addChildAccount = async (req, res) => {
       ...req.body,
       password: bcrypt.hashSync(req.body.password, 10)
     })
+    newChildAccount.loginCode = parentUser.loginCode
     const savedChildAccount = await newChildAccount.save()
     parentUser.childAccounts.push(savedChildAccount._id)
     await parentUser.save()
