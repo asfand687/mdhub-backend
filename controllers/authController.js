@@ -768,28 +768,59 @@ export const loginUser = async (req, res) => {
       email: req.body.email,
     }).populate("childAccounts");
 
-    !user && res.status(401).json("User not found");
+    if(!user){
+      const childUser = ChildAccount.findOne({
+        email: req.body.email
+      })
 
-    const passwordCorrect = await bcrypt.compare(
-      req.body.password,
-      user.password
-    );
-    if (passwordCorrect) {
-      const accessToken = jwt.sign(
-        {
-          id: user._id,
-          isChildUser: user.isChildUser,
-          isAdmin: user.isAdmin,
-        },
-        process.env.JWT_SEC,
-        { expiresIn: "3d" }
-      );
-      user.lastLoggedIn = new Date();
-      await user.save();
-      const { password, createdAt, updatedAt, __v, ...others } = user._doc;
-      res.status(200).json({ ...others, accessToken });
+      if(!childUser) {
+        return res.status(401).json("User not found")
+      }
+
+      const passwordCorrect = await bcrypt.compare(
+        req.body.password,
+        childUser.password
+      )
+      
+      if (passwordCorrect) {
+        const accessToken = jwt.sign(
+          {
+            id: childUser._id,
+            isChildUser: true,
+          },
+          process.env.JWT_SEC,
+          { expiresIn: "3d" }
+        )
+
+        const {password, createdAt, updatedAt, ...others} = childUser
+        res.status(200).json({...others, accessToken})
+      } else {
+        return res.status(401).json("Incorrect Password");
+      }
     } else {
-      res.status(401).json("Incorrect Password");
+      const passwordCorrect = await bcrypt.compare(
+        req.body.password,
+        user.password
+      );
+
+      if (passwordCorrect) {
+        const accessToken = jwt.sign(
+          {
+            id: user._id,
+            isChildUser: user.isChildUser,
+            isAdmin: user.isAdmin,
+          },
+          process.env.JWT_SEC,
+          { expiresIn: "3d" }
+        );
+
+        user.lastLoggedIn = new Date();
+        await user.save();
+        const { password, createdAt, updatedAt, __v, ...others } = user._doc;
+        res.status(200).json({ ...others, accessToken });
+      } else {
+        res.status(401).json("Incorrect Password");
+      }
     }
   } catch (err) {
     res.status(500).json(err);
