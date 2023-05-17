@@ -45,6 +45,7 @@ export const registerUser = async (req, res) => {
           password: bcrypt.hashSync(childAccount.password, 10),
           parentAccountId: savedUser._id,
         });
+        newChildAccount.loginCode = savedUser.loginCode
         const savedChildAccount = await newChildAccount.save();
         savedUser.childAccounts.push(savedChildAccount._id);
       }
@@ -784,8 +785,6 @@ export const loginUser = async (req, res) => {
       )
       
       if (passwordCorrect) {
-        console.log("PW CORRECT")
-        console.log(console.log(childUser._id))
         const accessToken = await jwt.sign(
           {
             id: childUser._id,
