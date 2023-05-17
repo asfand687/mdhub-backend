@@ -17,7 +17,13 @@ const stripe = new Stripe(process.env.STRIPE_PRIVATE_KEY);
 export const getUser = async (req, res) => {
   try {
     const user = await User.findById(req.params.id).populate("childAccounts");
-    console.log(user.consultationFeePaid);
+    if(!user) {
+      const childUser = await ChildAccount.findById(req.params.id)
+      if(!childUser) {
+        return res.status(400).json("No User Found")
+      }
+      return res.status(200).json(childUser)
+    }
     // let paymentInfo = {}
     // if (!user.isAdmin && user.stripeCustomerId !== "test") {
     //   paymentInfo = user.stripeCustomerId ? await getPaymentInfo(user.stripeCustomerId) : ""
@@ -297,7 +303,6 @@ export const getNewUserAndDeletedUserData = async (req, res) => {
 export const getUsersWithLatestPayment = async (req, res) => {
   try {
     const users = await User.find();
-    console.log(users);
     var latestPayment;
     // const usersWithLatestPayment = await Promise.all(users.map(async user => {
     //   if (user.stripeCustomerId === "test") {
@@ -333,7 +338,6 @@ export const getUsersWithLatestPayment = async (req, res) => {
         }
       })
     );
-    console.log(usersWithLatestPayment);
     res.status(200).json(usersWithLatestPayment);
   } catch (error) {
     console.error(error);
