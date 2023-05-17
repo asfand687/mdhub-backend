@@ -768,8 +768,9 @@ export const loginUser = async (req, res) => {
       email: req.body.email,
     }).populate("childAccounts");
 
+   
     if(!user){
-      const childUser = ChildAccount.findOne({
+      const childUser = await ChildAccount.findOne({
         email: req.body.email
       })
 
@@ -783,7 +784,9 @@ export const loginUser = async (req, res) => {
       )
       
       if (passwordCorrect) {
-        const accessToken = jwt.sign(
+        console.log("PW CORRECT")
+        console.log(console.log(childUser._id))
+        const accessToken = await jwt.sign(
           {
             id: childUser._id,
             isChildUser: true,
@@ -791,9 +794,9 @@ export const loginUser = async (req, res) => {
           process.env.JWT_SEC,
           { expiresIn: "3d" }
         )
-
+        
         const {password, createdAt, updatedAt, ...others} = childUser
-        res.status(200).json({...others, accessToken})
+        return res.status(200).json({...others, accessToken})
       } else {
         return res.status(401).json("Incorrect Password");
       }
