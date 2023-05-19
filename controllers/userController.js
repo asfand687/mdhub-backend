@@ -398,6 +398,42 @@ export const updateUser = async (req, res) => {
   }
 };
 
+export const upgradeToIndividualMonthlyAccount = async (req, res) => {
+  try {
+    const upgradableUser = await User.findById(req.body.userId)
+    if(!upgradableUser) {
+      return res.status(400).json("User not found")
+    }
+    const customer = await stripe.customers.retrieve(
+      upgradableUser.stripeCustomerId
+    );
+    req.body.paymentMethod = customer.invoice_settings.default_payment_method
+    req.body.totalAmount = 2999
+    const prices = await stripe.prices.list({ active: true });
+    const existingPrice = prices.data.find(
+      (price) => price.nickname === "MdHub Individual Monthly package"
+    );
+    await confirmPaymentIntent(req, customer.id);
+
+    const subscription = await stripe.subscriptions.create({
+      customer: customer.id,
+      items: [{ price: existingPrice.id }],
+      default_payment_method:
+        customer.invoice_settings.default_payment_method,
+    });
+
+    console.log("Subscription Created", subscription)
+
+    upgradableUser.accountType = "individual"
+    updateCodeForUser.paymentMethod = "monthly"
+    upgradableUser.consultationFeePaid = true
+
+    res.status(200).json("Account Upgraded")
+  } catch (error) {
+    res.status(400).json(error.message);
+  }
+}
+
 export const updateCodeForUser = async (req, res) => {
   try {
     const user = await User.findOne({ _id: req.params.userId });

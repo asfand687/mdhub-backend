@@ -1,6 +1,6 @@
 import express from 'express'
 import { verifyToken, verifyTokenAndAdmin } from '../utils/utils.js'
-import { updateCodeForUser, getUser, updateUser, getAllUsers, deleteUser, getNewUserAndDeletedUserData, getUsersWithLatestPayment, makeOnDemandPayment } from '../controllers/userController.js'
+import { updateCodeForUser, getUser, updateUser, getAllUsers, deleteUser, getNewUserAndDeletedUserData, getUsersWithLatestPayment, makeOnDemandPayment, upgradeToIndividualMonthlyAccount } from '../controllers/userController.js'
 
 const router = express.Router()
 
@@ -28,6 +28,9 @@ router.route("/:id").put(updateUser)
 // Update Code
 router.route("/updateCode/:userId").put(updateCodeForUser)
 
+
+// Upgrade User
+router.route("/upgradeUser").post(upgradeToIndividualMonthlyAccount)
 
 
 export default router
