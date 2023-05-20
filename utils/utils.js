@@ -300,14 +300,14 @@ export const sendSignupEmail = (email) => {
         <title>MDHUB</title>
       </head>
       
-      <body style="box-sizing: border-box; color:black; margin: 0; padding: 0; font-family: Arial, Helvetica, sans-serif; width: 680px; margin: 0 auto;">
-        <main style="margin-top: 4rem">
+      <body style="box-sizing: border-box; color:black; font-family: Arial, Helvetica, sans-serif;  margin: 0 auto;width: 680px;">
+        <main style="margin-top: 4rem; ">
           <img src="https://i.postimg.cc/28jBQMZ8/image-48.png" alt="logo" style="width: 138px; height: 29px">
-          <h1 style="width: 611px; height: 148px; font-size: 64px; font-weight: 500">
+          <h1 style="max-width: 611px; font-size: 64px; font-weight: 500">
             Fall in love with your new doctor’s office
           </h1>
     
-          <div style="width: 576px; height: 138px; font-size: 16px; font-weight: 500">
+          <div style="max-width: 576px; font-size: 16px; font-weight: 500">
             <p>Welcome to Canada’s first online medical platform.</p>
             <p>
               To use your multiple MDHUB benefits simply visit <a href="www.mdhub.ca" style="text-decoration: none; color: black;">www.mdhub.ca</a> and
@@ -326,9 +326,9 @@ export const sendSignupEmail = (email) => {
                 cursor: pointer;
               "></a>
           <!-- big image -->
-          <img src="https://i.postimg.cc/HWXfwPCK/bigimage.png" alt="big_image" style="width: 649px; height: 367px; margin-top: 1.5rem">
+          <img src="https://i.postimg.cc/HWXfwPCK/bigimage.png" alt="big_image" style="max-width: 649px; height: 367px; margin-top: 1.5rem">
           <!-- hr -->
-          <img src="https://i.postimg.cc/T3LjbFz5/pnnafterimage.png" alt="" style="width: 640px; height: 2px">
+          <img src="https://i.postimg.cc/T3LjbFz5/pnnafterimage.png" alt="" style="max-width: 640px; height: 2px">
           <h3 style="font-size: 24px; font-weight: 700; width: 524px; height: 32px">
             Here are 6 reasons why people love MDHUB:
           </h3>
