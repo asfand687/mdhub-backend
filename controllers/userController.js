@@ -6,6 +6,7 @@ import Appointment from "../models/Appointment.js";
 import bcrypt from "bcrypt";
 import {
   confirmPaymentIntent,
+  confirmPaymentIntentForOnDemandUser,
   getPaymentInfo,
   updatePaymentMethod,
 } from "../utils/utils.js";
@@ -399,21 +400,23 @@ export const updateUser = async (req, res) => {
 };
 
 export const upgradeToIndividualMonthlyAccount = async (req, res) => {
+  
   try {
     const upgradableUser = await User.findById(req.body.userId)
+    console.log(upgradableUser)
     if(!upgradableUser) {
       return res.status(400).json("User not found")
     }
     const customer = await stripe.customers.retrieve(
       upgradableUser.stripeCustomerId
     );
-    req.body.paymentMethod = customer.invoice_settings.default_payment_method
-    req.body.totalAmount = 2999
+    
+
     const prices = await stripe.prices.list({ active: true });
     const existingPrice = prices.data.find(
       (price) => price.nickname === "MdHub Individual Monthly package"
     );
-    await confirmPaymentIntent(req, customer.id);
+    await confirmPaymentIntentForOnDemandUser(req, customer, upgradableUser);
 
     const subscription = await stripe.subscriptions.create({
       customer: customer.id,
@@ -427,7 +430,8 @@ export const upgradeToIndividualMonthlyAccount = async (req, res) => {
     upgradableUser.accountType = "individual"
     updateCodeForUser.paymentMethod = "monthly"
     upgradableUser.consultationFeePaid = true
-
+    
+    upgradableUser.save()
     res.status(200).json("Account Upgraded")
   } catch (error) {
     res.status(400).json(error.message);

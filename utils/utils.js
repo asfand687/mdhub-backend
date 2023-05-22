@@ -341,7 +341,7 @@ export const createStripeCustomer = async (req) => {
   }
 }
 
-export const confirmPaymentIntent = async (req, customerId) => {
+export const confirmPaymentIntent = async (req, customerId, onDemandUser) => {
   try {
     if(req.body.totalAmount) {
       const paymentIntent = await stripe.paymentIntents.create({
@@ -363,6 +363,29 @@ export const confirmPaymentIntent = async (req, customerId) => {
     }
     
   } catch (error) {
+    console.log(error)
+    throw error(`Failed to process payment: ${error}`)
+  }
+}
+
+export const confirmPaymentIntentForOnDemandUser = async (req, customer, user) => {
+  try {
+    const paymentIntent = await stripe.paymentIntents.create({
+      amount: 2999, // Replace with the amount you want to charge in cents
+      currency: 'cad', // Replace with your preferred currency,
+      payment_method: customer.invoice_settings.default_payment_method,
+      customer: customer.id,
+      setup_future_usage: "on_session",
+      confirm: true,
+      metadata: {
+        firstName: user.firstName,
+        lastName: user.lastName,
+        email: user.email,
+      },
+    })
+    return true
+  } catch (error) {
+    console.log(error)
     throw error(`Failed to process payment: ${error}`)
   }
 }

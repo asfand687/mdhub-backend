@@ -17,9 +17,11 @@ dotenv.config();
 const stripe = new Stripe(process.env.STRIPE_PRIVATE_KEY);
 
 export const registerUser = async (req, res) => {
+  console.log(req.body)
   try {
     const { accountType, paymentMode, email } = req.body.primaryUserData;
     const customer = await createStripeCustomer(req);
+    console.log("customer created", customer)
     const code = await Code.findOne({ isAssigned: false });
     const newUser = new User({
       ...req.body.primaryUserData,
