@@ -178,6 +178,7 @@ export const makeOnDemandPayment = async (req, res) => {
 };
 
 export const getAllUsers = async (req, res) => {
+ 
   try {
     const users = await User.find({}, { password: 0 });
     res.status(200).json(users);
@@ -322,24 +323,32 @@ export const getUsersWithLatestPayment = async (req, res) => {
     //     }
     //   }
     // }))
-    const usersWithLatestPayment = await Promise.all(
-      users.map(async (user) => {
-        if (user.stripeCustomerId !== "test") {
-          latestPayment = await stripe.paymentIntents.list({
-            customer: user.stripeCustomerId,
-            limit: 1,
-          });
-          return {
-            ...user.toJSON(),
-            latestPayment: {
-              amount: latestPayment?.data[0]?.amount || null,
-              date: latestPayment?.data[0]?.created || null,
-            },
-          };
-        }
-      })
-    );
-    res.status(200).json(usersWithLatestPayment);
+    // const usersWithLatestPayment = await Promise.all(
+    //   users.map(async (user) => {
+    //     latestPayment = await stripe.paymentIntents.list({
+    //       customer: user.stripeCustomerId,
+    //       limit: 1,
+    //     });
+    //     if (latestPayment.data.length === 0) {
+    //       return {
+    //         ...user.toJSON(),
+    //         latestPayment: {
+    //           amount: null,
+    //           date: null,
+    //         },
+    //       };
+    //     }
+      
+    //     return {
+    //       ...user.toJSON(),
+    //       latestPayment: {
+    //         amount: latestPayment.data[0].amount || null,
+    //         date: latestPayment.data[0].created || null,
+    //       },
+    //     };
+    //   })
+    // );
+    res.status(200).json(users);
   } catch (error) {
     console.error(error);
     res.status(500).json({
@@ -389,6 +398,10 @@ export const updateUser = async (req, res) => {
 
     if (req.body.postalCode) {
       user.postalCode = req.body.postalCode;
+    }
+
+    if (req.body.city) {
+      user.city = req.body.city
     }
 
     await user.save();
