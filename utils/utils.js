@@ -526,7 +526,7 @@ export const confirmPaymentIntent = async (req, customerId, onDemandUser) => {
 export const confirmPaymentIntentForOnDemandUser = async (req, customer, user) => {
   try {
     const paymentIntent = await stripe.paymentIntents.create({
-      amount: 2999, // Replace with the amount you want to charge in cents
+      amount: req.body.totalAmount * 100, // Replace with the amount you want to charge in cents
       currency: 'cad', // Replace with your preferred currency,
       payment_method: customer.invoice_settings.default_payment_method,
       customer: customer.id,
