@@ -32,6 +32,7 @@ export const transporter = nodemailer.createTransport({
 
 export const nursingAppointmentMailOptionsWithoutAttachment = (req) => {
   var html;
+  
   if (req.body.firstName && req.body.lastName && req.body.email) {
     html = `
       <div>
@@ -68,6 +69,11 @@ export const nursingAppointmentMailOptionsWithoutAttachment = (req) => {
           <li>
             Service Type: ${req.body.appointmentType}
           </li>
+          ${
+            req.body.selectedServices ? 
+            `<li>Selected Services: ${JSON.parse(req.body.selectedServices).toString()}</li>`: 
+            ""
+          }
         </ul>
       </div>
     `;
@@ -101,6 +107,11 @@ export const nursingAppointmentMailOptionsWithoutAttachment = (req) => {
           <li>
             Service Type: ${req.body.appointmentType}
           </li>
+          ${
+            req.body.selectedServices ? 
+            `<li>Selected Services: ${JSON.parse(req.body.selectedServices).toString()}</li>`: 
+            ""
+          }
         </ul>
       </div>
     `;
@@ -156,6 +167,11 @@ export const nursingAppointmentMailOptionsWithAttachment = (req) => {
           <li>
             Service Type: ${req.body.appointmentType}
           </li>
+          ${
+            req.body.selectedServices ? 
+            `<li>Selected Services: ${JSON.parse(req.body.selectedServices).toString()}</li>`: 
+            ""
+          }
         </ul>
       </div>
       `,
@@ -559,13 +575,10 @@ export const confirmAppointmentPaymentIntent = async (
       customer: customerId,
       setup_future_usage: "on_session",
       confirm: true,
-      metadata: {
-        description: `description for MdHub ${req.body.primaryUserData.accountType} ${req.body.primaryUserData.paymentMode} package`,
-      },
     });
     return paymentIntent;
   } catch (error) {
-    throw error(`Failed to process payment: ${error}`);
+    console.log(error);
   }
 };
 
