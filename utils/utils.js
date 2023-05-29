@@ -118,7 +118,7 @@ export const nursingAppointmentMailOptionsWithoutAttachment = (req) => {
   }
   return {
     from: "mdhubtest@gmail.com",
-    to: "amir@cbstudio.ca,safiraja687@gmail.com",
+    to: "amir@cbstudio.ca,info@mdhub.ca",
     subject: "Requisition Form",
     html,
   };
@@ -302,7 +302,7 @@ export const diagnosticsAppointmentMailOptionsWithAttachment = (req) => {
 // new users and child accounts welcome email
 export const sendSignupEmail = (email) => {
   const mailOptions = {
-    from: "asfandyar687@gmail.com",
+    from: "mdhubtest@gmail.com",
     to: email,
     subject: "Welcome to MDHUB",
     html: `
