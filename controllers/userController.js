@@ -262,20 +262,9 @@ export const getNewUserAndDeletedUserData = async (req, res) => {
     const startDate = new Date(currentYear, currentMonth - 1, 1); // Subtract 1 from the month to account for 0-indexing
     const endDate = new Date(currentYear, currentMonth, 0); // Set the end date to the last day of the current month
 
-    // Use Stripe's charges API to retrieve all charges within the current month
-    const charges = await stripe.charges.list({
-      created: {
-        gte: Math.floor(startDate.getTime() / 1000), // Convert to Unix timestamp
-        lte: Math.floor(endDate.getTime() / 1000), // Convert to Unix timestamp
-      },
-    });
 
-    // Calculate the total revenue from the charges
-    let totalRevenue = 0;
-    for (const charge of charges.data) {
-      totalRevenue += charge.amount;
-    }
-
+    const stripeBalance = await stripe.balance.retrieve()
+    
     // Use Stripe's subscriptions API to retrieve all subscriptions created within the current month
     const subscriptions = await stripe.subscriptions.list({
       created: {
@@ -289,7 +278,7 @@ export const getNewUserAndDeletedUserData = async (req, res) => {
       data: {
         usersThisWeek,
         deletedUsers,
-        totalRevenue: (totalRevenue / 100).toFixed(2),
+        totalRevenue: (stripeBalance.available[0].amount / 100).toFixed(2),
         numberOfSubscriptions: subscriptions.data.length,
       },
     });
@@ -305,7 +294,8 @@ export const getNewUserAndDeletedUserData = async (req, res) => {
 export const getUsersWithLatestPayment = async (req, res) => {
   try {
     const users = await User.find();
-    var latestPayment;
+    await stripe.balance.retrieve()
+    const deletedUsers = await DeletedUser.find({}).exec();
     // const usersWithLatestPayment = await Promise.all(users.map(async user => {
     //   if (user.stripeCustomerId === "test") {
     //     latestPayment = { data: [{ amount: 0, date: new Date() }] }
@@ -348,7 +338,7 @@ export const getUsersWithLatestPayment = async (req, res) => {
     //     };
     //   })
     // );
-    res.status(200).json(users);
+    res.status(200).json({users: users, deletedUsers: deletedUsers});
   } catch (error) {
     console.error(error);
     res.status(500).json({
@@ -416,7 +406,6 @@ export const upgradeToIndividualMonthlyAccount = async (req, res) => {
   
   try {
     const upgradableUser = await User.findById(req.body.userId)
-    console.log(upgradableUser)
     if(!upgradableUser) {
       return res.status(400).json("User not found")
     }
