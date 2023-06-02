@@ -24,7 +24,11 @@ const User = new mongoose.Schema({
   stripeCustomerId: { type: String },
   isAdmin: { type: Boolean, default: false },
   lastLoggedIn: { type: Date },
-  consultationFeePaid: { type: Boolean }
+  consultationFeePaid: { type: Boolean },
+  nextPaymentDate: { type: String },
+  billingHistoryAmount: {type: String},
+  lastPaymentDate: {type: String},
+  subscriptionId: { type: String }
 }, 
 { timestamps: true }
 )
