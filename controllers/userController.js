@@ -456,8 +456,47 @@ export const cancelSubscription = async (req, res) => {
   try {
     const user = await User.findById(userId)
     const cancelSubscription = await stripe.subscriptions.cancel(subscriptionId)
-    user.subscriptionId = ""
-    user.save()
+    // Delete child accounts associated with the user
+    await ChildAccount.deleteMany({ parentAccount: userId });
+
+    // Delete appointments associated with the user
+    await Appointment.deleteMany({ user: userId });
+
+    // Add user to DeletedUser model
+    const deletedUser = new DeletedUser({
+      firstName: user.firstName,
+      lastName: user.lastName,
+      email: user.email,
+      password: user.password,
+      phone: user.phone,
+      gender: user.gender,
+      dateOfBirth: user.dateOfBirth,
+      address: user.address,
+      country: user.country,
+      city: user.city,
+      region: user.region,
+      postalCode: user.postalCode,
+      accountType: user.accountType,
+      paymentMode: user.paymentMode,
+      loginCode: user.loginCode,
+      stripeCustomerId: user.stripeCustomerId,
+    });
+
+    await deletedUser.save();
+
+    // Remove assigned code and update Code schema
+    if (user.loginCode) {
+      await Code.findOneAndUpdate(
+        { code: user.loginCode },
+        { isAssigned: false, userId: null }
+      );
+    }
+
+    // Delete user from User model
+    const delUser = await User.findByIdAndRemove(userId);
+    if(!delUser) {
+      const delChildUser = await ChildAccount.findByIdAndRemove(userId)
+    }
     res.status(200).json("Subscription Cancelled")
 
   } catch (error) {
