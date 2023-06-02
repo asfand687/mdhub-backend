@@ -450,3 +450,18 @@ export const updateCodeForUser = async (req, res) => {
     res.status(400).json(error.message);
   }
 };
+
+export const cancelSubscription = async (req, res) => {
+  const { userId, subscriptionId } = req.body
+  try {
+    const user = await User.findById(userId)
+    const cancelSubscription = await stripe.subscriptions.cancel(subscriptionId)
+    user.subscriptionId = ""
+    user.save()
+    res.status(200).json("Subscription Cancelled")
+
+  } catch (error) {
+    console.log(error)
+    res.status(404).json(error)
+  }
+}
