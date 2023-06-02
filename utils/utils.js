@@ -4,6 +4,7 @@ import Stripe from "stripe";
 import multer from "multer";
 import nodemailer from "nodemailer";
 import path from "path";
+import dayjs from "dayjs"
 
 dotenv.config();
 const stripe = new Stripe(process.env.STRIPE_PRIVATE_KEY);
@@ -604,3 +605,87 @@ export const updatePaymentMethod = async (customerId, paymentMethodId) => {
     throw new error("Failed to retrieve payment info");
   }
 };
+
+const checkPrice = async (priceName, productId, paymentMode) => {
+  // Check if price exists
+  const prices = await stripe.prices.list({
+    active: true
+  });
+  const existingPrice = prices.data.find(
+    (price) => price.nickname === priceName
+  );
+
+  if(existingPrice) {
+    return existingPrice
+  } else {
+    const newPrice = await stripe.prices.create({
+      product: productId,
+      unit_amount: req.body.totalAmount,
+      currency: "cad",
+      recurring: {
+        interval: paymentMode === "monthly" ? "month" : "year"
+      },
+      nickname: "priceName",
+    });
+
+    return newPrice
+  }
+}
+
+export const createSubscription = async (productName, priceName, paymentMode, customer) => {
+  try {
+    const products = await stripe.products.list({
+      active: true
+    });
+    const existingProduct = products.data.find(
+      (product) => product.name === productName
+    );
+    if(!existingProduct) {
+      const newProduct = await stripe.products.create({
+        active: true,
+        name: productName,
+      });
+  
+      // Get the newly created product ID
+      const productId = newProduct.id;
+      console.log("Product created:", newProduct);
+  
+      const price = await checkPrice(priceName, productId, paymentMode)
+  
+      const subscription = await stripe.subscriptions.create({
+        customer: customer.id,
+        items: [{
+          price: price.id
+        }],
+        trial_period_days: 90,
+        default_payment_method: customer.invoice_settings.default_payment_method,
+      });
+      return subscription
+    } else {
+      const productId = existingProduct.id
+      const price = await checkPrice(priceName, productId, paymentMode)
+      const subscription = await stripe.subscriptions.create({
+        customer: customer.id,
+        items: [{
+          price: price.id
+        }],
+        trial_period_days: 90,
+        default_payment_method: customer.invoice_settings.default_payment_method,
+      });
+      return subscription
+    }
+  } catch (error) {
+    console.log(error)
+  }
+}
+
+export const calculateFutureDate = (account, paymentMode) => {
+  // Get the current date
+  var currentDate = dayjs();
+
+  if(account !== "on demand") {
+    return paymentMode === "monthly" ? currentDate.add(3, 'month') : currentDate.add(12, 'month')
+  } else {
+    return currentDate.add(7, 'day')
+  }
+}
