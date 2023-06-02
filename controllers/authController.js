@@ -4,6 +4,7 @@ import ChildAccount from "../models/ChildAccount.js";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import nodemailer from "nodemailer";
+import dayjs from 'dayjs'
 import {
   createStripeCustomer,
   confirmPaymentIntent,
@@ -11,6 +12,7 @@ import {
   transporter,
   forgotPasswordMail,
   sendSignupEmail,
+  createSubscription,
 } from "../utils/utils.js";
 import Stripe from "stripe";
 import * as dotenv from "dotenv";
@@ -18,7 +20,6 @@ dotenv.config();
 const stripe = new Stripe(process.env.STRIPE_PRIVATE_KEY);
 
 export const registerUser = async (req, res) => {
-  console.log(req.body)
   try {
     const {
       accountType,
@@ -61,696 +62,70 @@ export const registerUser = async (req, res) => {
       await savedUser.save();
     }
 
+    if(accountType === "individual" && paymentMode === "monthly") {
+      await confirmPaymentIntent(req, customer.id);
+      const subscription = await createSubscription("MdHub Individual package", "MdHub Individual Monthly package", paymentMode, customer)
+      savedUser.lastPaymentDate = subscription.current_period_start
+      savedUser.nextPaymentDate = subscription.current_period_end
+      savedUser.billingHistoryAmount = subscription.plan.amount 
+      savedUser.subscriptionId = subscription.id
+
+      savedUser.save()
+    }
+    
+    if(accountType === "individual" && paymentMode === "yearly") {
+      const subscription = await createSubscription ("MdHub Individual package", "MdHub Individual Yearly package", paymentMode, customer)
+      savedUser.lastPaymentDate = subscription.current_period_start
+      savedUser.nextPaymentDate = subscription.current_period_end
+      savedUser.billingHistoryAmount = subscription.plan.amount 
+      savedUser.subscriptionId = subscription.id
+
+      savedUser.save()
+    }
+
+    if(accountType === "family" && paymentMode === "monthly") {
+      await confirmPaymentIntent(req, customer.id);
+      const subscription = await createSubscription ("MdHub Family package", `MdHub Family Monthly package for ${
+        req.body.childUsersData.length + 1
+      } members`, paymentMode, customer)
+      savedUser.lastPaymentDate = subscription.current_period_start
+      savedUser.nextPaymentDate = subscription.current_period_end
+      savedUser.billingHistoryAmount = subscription.plan.amount 
+      savedUser.subscriptionId = subscription.id
+
+      savedUser.save()
+    }
+    
+    if(accountType === "family" && paymentMode === "yearly") {
+      const subscription = await createSubscription ("MdHub Family package", `MdHub Family Yearly package for ${
+        req.body.childUsersData.length + 1
+      } members`, paymentMode, customer)
+      savedUser.lastPaymentDate = subscription.current_period_start
+      savedUser.nextPaymentDate = subscription.current_period_end
+      savedUser.billingHistoryAmount = subscription.plan.amount 
+      savedUser.subscriptionId = subscription.id
+
+      savedUser.save()
+    }
+
+    if(accountType === "corporate"){
+      const subscription = await createSubscription ("MdHub Corporate package", `MdHub Corporate package for ${
+        req.body.childUsersData.length + 1
+      } members`, paymentMode, customer)
+      savedUser.lastPaymentDate = subscription.current_period_start
+      savedUser.nextPaymentDate = subscription.current_period_end
+      savedUser.billingHistoryAmount = subscription.plan.amount 
+      savedUser.subscriptionId = subscription.id
+
+      savedUser.save()
+    }
+    
+    sendSignupEmail(email)
+
     const {
       password,
       ...others
     } = savedUser._doc;
-
-    //  for on demand user
-
-    if (accountType === "individual" && paymentMode === "monthly") {
-      const products = await stripe.products.list({
-        active: true
-      });
-      const existingProduct = products.data.find(
-        (product) => product.name === "MdHub Individual package"
-      );
-      if (!existingProduct) {
-        // If product doesn't exist, create a new product
-        const newProduct = await stripe.products.create({
-          active: true,
-          name: "MdHub Individual package",
-        });
-
-        // Get the newly created product ID
-        const productId = newProduct.id;
-        console.log("Product created:", newProduct);
-
-        // Check if price exists
-        const prices = await stripe.prices.list({
-          active: true
-        });
-        const existingPrice = prices.data.find(
-          (price) => price.nickname === "MdHub Individual Monthly package"
-        );
-
-        if (existingPrice) {
-          // If price exists, use the existing price ID for creating subscription
-          await confirmPaymentIntent(req, customer.id);
-          // Create subscription with existing price ID
-          const subscription = await stripe.subscriptions.create({
-            customer: customer.id,
-            items: [{
-              price: existingPrice.id
-            }],
-            trial_period_days: 90,
-            default_payment_method: customer.invoice_settings.default_payment_method,
-          });
-
-          console.log(
-            "Subscription created with existing price ID:",
-            subscription
-          );
-        } else {
-          // If price doesn't exist, create a new price with product ID
-          const newPrice = await stripe.prices.create({
-            product: productId,
-            unit_amount: req.body.totalAmount,
-            currency: "cad",
-            recurring: {
-              interval: "month"
-            },
-            nickname: "MdHub Individual Monthly package",
-          });
-
-          // Get the newly created price ID
-          const newPriceId = newPrice.id;
-
-          await confirmPaymentIntent(req, customer.id);
-          // Create subscription with newly created price ID
-          const subscription = await stripe.subscriptions.create({
-            customer: customer.id,
-            items: [{
-              price: newPriceId
-            }],
-            trial_period_days: 90,
-            default_payment_method: customer.invoice_settings.default_payment_method,
-          });
-
-          console.log(
-            "Subscription created with newly created price ID:",
-            subscription
-          );
-        }
-      } else {
-        // Check if price exists
-        const prices = await stripe.prices.list({
-          active: true
-        });
-        const existingPrice = prices.data.find(
-          (price) => price.nickname === "MdHub Individual Monthly package"
-        );
-
-        if (existingPrice) {
-          // If price exists, use the existing price ID for creating subscription
-
-          await confirmPaymentIntent(req, customer.id);
-          // Create subscription with existing price ID
-          const subscription = await stripe.subscriptions.create({
-            customer: customer.id,
-            items: [{
-              price: existingPrice.id
-            }],
-            trial_period_days: 90,
-            default_payment_method: customer.invoice_settings.default_payment_method,
-          });
-
-          console.log(
-            "Subscription created with existing price ID:",
-            subscription
-          );
-        } else {
-          // If price doesn't exist, create a new price with product ID
-          const newPrice = await stripe.prices.create({
-            product: existingProduct.id,
-            unit_amount: req.body.totalAmount,
-            currency: "cad",
-            recurring: {
-              interval: "month"
-            },
-            nickname: "MdHub Individual Monthly package",
-          });
-
-          // Get the newly created price ID
-          const newPriceId = newPrice.id;
-
-          await confirmPaymentIntent(req, customer.id);
-          // Create subscription with newly created price ID
-          const subscription = await stripe.subscriptions.create({
-            customer: customer.id,
-            items: [{
-              price: newPriceId
-            }],
-            trial_period_days: 90,
-            default_payment_method: customer.invoice_settings.default_payment_method,
-          });
-
-          console.log(
-            "Subscription created with newly created price ID:",
-            subscription
-          );
-        }
-      }
-    }
-
-    if (accountType === "individual" && paymentMode === "yearly") {
-      const products = await stripe.products.list({
-        active: true
-      });
-      const existingProduct = products.data.find(
-        (product) => product.name === "MdHub Individual package"
-      );
-      if (!existingProduct) {
-        // If product doesn't exist, create a new product
-        const newProduct = await stripe.products.create({
-          active: true,
-          name: "MdHub Individual package",
-        });
-
-        // Get the newly created product ID
-        const productId = newProduct.id;
-        console.log("Product created:", newProduct);
-
-        // Check if price exists
-        const prices = await stripe.prices.list({
-          active: true
-        });
-        const existingPrice = prices.data.find(
-          (price) => price.nickname === "MdHub Individual Yearly package"
-        );
-
-        if (existingPrice) {
-          // If price exists, use the existing price ID for creating subscription
-
-          // Create subscription with existing price ID
-          const subscription = await stripe.subscriptions.create({
-            customer: customer.id,
-            coupon: req.body.couponCode,
-            items: [{
-              price: existingPrice.id
-            }],
-          });
-
-          console.log(
-            "Subscription created with existing price ID:",
-            subscription
-          );
-        } else {
-          // If price doesn't exist, create a new price with product ID
-          const newPrice = await stripe.prices.create({
-            product: productId,
-            unit_amount: req.body.totalAmount,
-            currency: "cad",
-            recurring: {
-              interval: "year"
-            },
-            nickname: "MdHub Individual Yearly package",
-          });
-
-          // Get the newly created price ID
-          const newPriceId = newPrice.id;
-
-          // Create subscription with newly created price ID
-          const subscription = await stripe.subscriptions.create({
-            customer: customer.id,
-            items: [{
-              price: newPriceId
-            }],
-            coupon: req.body.couponCode,
-          });
-
-          console.log(
-            "Subscription created with newly created price ID:",
-            subscription
-          );
-        }
-      } else {
-        // Check if price exists
-        const prices = await stripe.prices.list({
-          active: true
-        });
-        const existingPrice = prices.data.find(
-          (price) => price.nickname === "MdHub Individual Yearly package"
-        );
-
-        if (existingPrice) {
-          // If price exists, use the existing price ID for creating subscription
-
-          // Create subscription with existing price ID
-          const subscription = await stripe.subscriptions.create({
-            customer: customer.id,
-            items: [{
-              price: existingPrice.id
-            }],
-            coupon: req.body.couponCode,
-          });
-
-          console.log(
-            "Subscription created with existing price ID:",
-            subscription
-          );
-        } else {
-          // If price doesn't exist, create a new price with product ID
-          const newPrice = await stripe.prices.create({
-            product: existingProduct.id,
-            unit_amount: req.body.totalAmount,
-            currency: "cad",
-            recurring: {
-              interval: "year"
-            },
-            nickname: "MdHub Individual Yearly package",
-          });
-
-          // Get the newly created price ID
-          const newPriceId = newPrice.id;
-
-          // Create subscription with newly created price ID
-          const subscription = await stripe.subscriptions.create({
-            customer: customer.id,
-            items: [{
-              price: newPriceId
-            }],
-            coupon: req.body.couponCode,
-          });
-
-          console.log(
-            "Subscription created with newly created price ID:",
-            subscription
-          );
-        }
-      }
-    }
-
-    if (accountType === "family" && paymentMode === "monthly") {
-      const products = await stripe.products.list({
-        active: true
-      });
-      const existingProduct = products.data.find(
-        (product) => product.name === "MdHub Family package"
-      );
-      if (!existingProduct) {
-        // If product doesn't exist, create a new product
-        const newProduct = await stripe.products.create({
-          active: true,
-          name: "MdHub Family package",
-        });
-
-        // Get the newly created product ID
-        const productId = newProduct.id;
-        console.log("Product created:", newProduct);
-
-        // Check if price exists
-        const prices = await stripe.prices.list({
-          active: true
-        });
-        const existingPrice = prices.data.find(
-          (price) =>
-          price.nickname ===
-          `MdHub Family Monthly package for ${
-              req.body.childUsersData.length + 1
-            } members`
-        );
-
-        if (existingPrice) {
-          // If price exists, use the existing price ID for creating subscription
-          await confirmPaymentIntent(req, customer.id);
-          // Create subscription with existing price ID
-          const subscription = await stripe.subscriptions.create({
-            customer: customer.id,
-            items: [{
-              price: existingPrice.id
-            }],
-            trial_period_days: 90,
-            default_payment_method: customer.invoice_settings.default_payment_method,
-          });
-
-          console.log(
-            "Subscription created with existing price ID:",
-            subscription
-          );
-        } else {
-          // If price doesn't exist, create a new price with product ID
-          const newPrice = await stripe.prices.create({
-            product: productId,
-            unit_amount: req.body.totalAmount,
-            currency: "cad",
-            recurring: {
-              interval: "month"
-            },
-            nickname: `MdHub Family Monthly package for ${
-              req.body.childUsersData.length + 1
-            } members`,
-          });
-
-          // Get the newly created price ID
-          const newPriceId = newPrice.id;
-
-          await confirmPaymentIntent(req, customer.id);
-          // Create subscription with newly created price ID
-          const subscription = await stripe.subscriptions.create({
-            customer: customer.id,
-            items: [{
-              price: newPriceId
-            }],
-            trial_period_days: 90,
-            default_payment_method: customer.invoice_settings.default_payment_method,
-          });
-
-          console.log(
-            "Subscription created with newly created price ID:",
-            subscription
-          );
-        }
-      } else {
-        const prices = await stripe.prices.list({
-          active: true
-        });
-        const existingPrice = prices.data.find(
-          (price) =>
-          price.nickname ===
-          `MdHub Family Monthly package for ${
-              req.body.childUsersData.length + 1
-            } members`
-        );
-
-        if (existingPrice) {
-          // If price exists, use the existing price ID for creating subscription
-
-          await confirmPaymentIntent(req, customer.id);
-          // Create subscription with newly created price ID
-          const subscription = await stripe.subscriptions.create({
-            customer: customer.id,
-            items: [{
-              price: newPriceId
-            }],
-            trial_period_days: 90,
-            default_payment_method: customer.invoice_settings.default_payment_method,
-          });
-
-          console.log(
-            "Subscription created with existing price ID:",
-            subscription
-          );
-        } else {
-          // If price doesn't exist, create a new price with product ID
-          const newPrice = await stripe.prices.create({
-            product: existingProduct.id,
-            unit_amount: req.body.totalAmount,
-            currency: "cad",
-            recurring: {
-              interval: "month"
-            },
-            nickname: `MdHub Family Monthly package for ${
-              req.body.childUsersData.length + 1
-            } members`,
-          });
-
-          // Get the newly created price ID
-          const newPriceId = newPrice.id;
-
-          await confirmPaymentIntent(req, customer.id);
-          // Create subscription with newly created price ID
-          const subscription = await stripe.subscriptions.create({
-            customer: customer.id,
-            items: [{
-              price: newPriceId
-            }],
-            trial_period_days: 90,
-            default_payment_method: customer.invoice_settings.default_payment_method,
-          });
-          console.log(
-            "Subscription created with newly created price ID:",
-            subscription
-          );
-        }
-      }
-    }
-
-    if (accountType === "family" && paymentMode === "yearly") {
-      const products = await stripe.products.list({
-        active: true
-      });
-      const existingProduct = products.data.find(
-        (product) => product.name === "MdHub Family package"
-      );
-      if (!existingProduct) {
-        // If product doesn't exist, create a new product
-        const newProduct = await stripe.products.create({
-          active: true,
-          name: "MdHub Family package",
-        });
-
-        // Get the newly created product ID
-        const productId = newProduct.id;
-        console.log("Product created:", newProduct);
-
-        // Check if price exists
-        const prices = await stripe.prices.list({
-          active: true
-        });
-        const existingPrice = prices.data.find(
-          (price) =>
-          price.nickname ===
-          `MdHub Family Yearly package for ${
-              req.body.childUsersData.length + 1
-            } members`
-        );
-
-        if (existingPrice) {
-          // If price exists, use the existing price ID for creating subscription
-
-          // Create subscription with existing price ID
-          const subscription = await stripe.subscriptions.create({
-            customer: customer.id,
-            items: [{
-              price: existingPrice.id
-            }],
-            coupon: req.body.couponCode,
-          });
-
-          console.log(
-            "Subscription created with existing price ID:",
-            subscription
-          );
-        } else {
-          // If price doesn't exist, create a new price with product ID
-          const newPrice = await stripe.prices.create({
-            product: productId,
-            unit_amount: parseInt(req.body.totalAmount),
-            currency: "cad",
-            recurring: {
-              interval: "year"
-            },
-            nickname: `MdHub Family Yearly package for ${
-              req.body.childUsersData.length + 1
-            } members`,
-          });
-
-          // Get the newly created price ID
-          const newPriceId = newPrice.id;
-
-          // Create subscription with newly created price ID
-          const subscription = await stripe.subscriptions.create({
-            customer: customer.id,
-            items: [{
-              price: newPriceId
-            }],
-            coupon: req.body.couponCode,
-          });
-
-          console.log(
-            "Subscription created with newly created price ID:",
-            subscription
-          );
-        }
-      } else {
-        const prices = await stripe.prices.list({
-          active: true
-        });
-        const existingPrice = prices.data.find(
-          (price) =>
-          price.nickname ===
-          `MdHub Family Yearly package for ${
-              req.body.childUsersData.length + 1
-            } members`
-        );
-
-        if (existingPrice) {
-          // If price exists, use the existing price ID for creating subscription
-
-          // Create subscription with newly created price ID
-          const subscription = await stripe.subscriptions.create({
-            customer: customer.id,
-            items: [{
-              price: newPriceId
-            }],
-          });
-
-          console.log(
-            "Subscription created with existing price ID:",
-            subscription
-          );
-        } else {
-          // If price doesn't exist, create a new price with product ID
-          const newPrice = await stripe.prices.create({
-            product: existingProduct.id,
-            unit_amount: parseInt(req.body.totalAmount),
-            currency: "cad",
-            recurring: {
-              interval: "year"
-            },
-            nickname: `MdHub Family Yearly package for ${
-              req.body.childUsersData.length + 1
-            } members`,
-          });
-
-          // Get the newly created price ID
-          const newPriceId = newPrice.id;
-
-          // Create subscription with newly created price ID
-          const subscription = await stripe.subscriptions.create({
-            customer: customer.id,
-            items: [{
-              price: newPriceId
-            }],
-            coupon: req.body.couponCode,
-          });
-          console.log(
-            "Subscription created with newly created price ID:",
-            subscription
-          );
-        }
-      }
-    }
-
-    if (accountType === "corporate") {
-      const products = await stripe.products.list({
-        active: true
-      });
-      const existingProduct = products.data.find(
-        (product) => product.name === "MdHub Corporate package"
-      );
-      if (!existingProduct) {
-        // If product doesn't exist, create a new product
-        const newProduct = await stripe.products.create({
-          active: true,
-          name: "MdHub Corporate package",
-        });
-
-        // Get the newly created product ID
-        const productId = newProduct.id;
-        console.log("Product created:", newProduct);
-
-        // Check if price exists
-        const prices = await stripe.prices.list({
-          active: true
-        });
-        const existingPrice = prices.data.find(
-          (price) =>
-          price.nickname ===
-          `MdHub Corporate package for ${
-              req.body.childUsersData.length + 1
-            } members`
-        );
-
-        if (existingPrice) {
-          // If price exists, use the existing price ID for creating subscription
-
-          // Create subscription with existing price ID
-          const subscription = await stripe.subscriptions.create({
-            customer: customer.id,
-            items: [{
-              price: existingPrice.id
-            }],
-            coupon: req.body.couponCode,
-          });
-
-          console.log(
-            "Subscription created with existing price ID:",
-            subscription
-          );
-        } else {
-          // If price doesn't exist, create a new price with product ID
-          const newPrice = await stripe.prices.create({
-            product: productId,
-            unit_amount: parseInt(req.body.totalAmount),
-            currency: "cad",
-            recurring: {
-              interval: "year"
-            },
-            nickname: `MdHub Corporate package for ${
-              req.body.childUsersData.length + 1
-            } members`,
-          });
-
-          // Get the newly created price ID
-          const newPriceId = newPrice.id;
-
-          // Create subscription with newly created price ID
-          const subscription = await stripe.subscriptions.create({
-            customer: customer.id,
-            items: [{
-              price: newPriceId
-            }],
-            coupon: req.body.couponCode,
-          });
-
-          console.log(
-            "Subscription created with newly created price ID:",
-            subscription
-          );
-        }
-      } else {
-        const prices = await stripe.prices.list({
-          active: true
-        });
-        const existingPrice = prices.data.find(
-          (price) =>
-          price.nickname ===
-          `MdHub Corporate package for ${
-              req.body.childUsersData.length + 1
-            } members`
-        );
-
-        if (existingPrice) {
-          // If price exists, use the existing price ID for creating subscription
-
-          // Create subscription with newly created price ID
-          const subscription = await stripe.subscriptions.create({
-            customer: customer.id,
-            items: [{
-              price: newPriceId
-            }],
-          });
-
-          console.log(
-            "Subscription created with existing price ID:",
-            subscription
-          );
-        } else {
-          // If price doesn't exist, create a new price with product ID
-          const newPrice = await stripe.prices.create({
-            product: existingProduct.id,
-            unit_amount: parseInt(req.body.totalAmount),
-            currency: "cad",
-            recurring: {
-              interval: "year"
-            },
-            nickname: `MdHub Corporate package for ${
-              req.body.childUsersData.length + 1
-            } members`,
-          });
-
-          // Get the newly created price ID
-          const newPriceId = newPrice.id;
-
-          // Create subscription with newly created price ID
-          const subscription = await stripe.subscriptions.create({
-            customer: customer.id,
-            items: [{
-              price: newPriceId
-            }],
-            coupon: req.body.couponCode,
-          });
-          console.log(
-            "Subscription created with newly created price ID:",
-            subscription
-          );
-        }
-      }
-    }
-    
-    sendSignupEmail(email)
 
     res.status(200).json({
       ...others
