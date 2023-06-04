@@ -10,7 +10,9 @@ import {
   getUsersWithLatestPayment, 
   makeOnDemandPayment, 
   upgradeToIndividualMonthlyAccount, 
-  cancelSubscription 
+  cancelSubscription, 
+  checkEmailAddress,
+  checkPhoneNumber
 } from '../controllers/userController.js'
 
 const router = express.Router()
@@ -44,6 +46,11 @@ router.route("/upgradeUser").post(upgradeToIndividualMonthlyAccount)
 
 // cancel subscription
 router.route("/cancel-subscription").post(cancelSubscription)
+
+// check email
+router.route("/check-email").post(checkEmailAddress)
+
+
 
 
 export default router
