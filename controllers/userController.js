@@ -505,7 +505,7 @@ export const cancelSubscription = async (req, res) => {
   }
 }
 
-const checkEmailAddress = async(req, res) => {
+export const checkEmailAddress = async(req, res) => {
   const { email } = req.body
   try {
     const user = await User.find({email: email})
@@ -519,7 +519,7 @@ const checkEmailAddress = async(req, res) => {
   }
 }
 
-const checkPhoneNumber = async(req, res) => {
+export const checkPhoneNumber = async(req, res) => {
   const { phone } = req.body
   try {
     const user = await User.find({phone: phone})
