@@ -518,3 +518,17 @@ const checkEmailAddress = async(req, res) => {
     res.status(400).json(error)
   }
 }
+
+const checkPhoneNumber = async(req, res) => {
+  const { phone } = req.body
+  try {
+    const user = await User.find({phone: phone})
+    if(!user) {
+      return res.status(200).json({userFound: true})
+    } 
+    res.status(200).json({userFound: False})
+  } catch (error) {
+    console.log(error)
+    res.status(400).json(error)
+  }
+}
