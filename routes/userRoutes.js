@@ -50,7 +50,8 @@ router.route("/cancel-subscription").post(cancelSubscription)
 // check email
 router.route("/check-email").post(checkEmailAddress)
 
-
+// check phone number
+router.route("/check-phone").post(checkPhoneNumber)
 
 
 export default router
