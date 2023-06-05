@@ -523,7 +523,6 @@ export const checkPhoneNumber = async(req, res) => {
   const { phone } = req.body
   try {
     const user = await User.findOne({phone: phone})
-    console.log(user)
     if(user) {
       return res.status(200).json({userFound: true})
     } 
