@@ -508,11 +508,11 @@ export const cancelSubscription = async (req, res) => {
 export const checkEmailAddress = async(req, res) => {
   const { email } = req.body
   try {
-    const user = await User.find({email: email})
-    if(!user) {
+    const user = await User.findOne({email: email})
+    if(user) {
       return res.status(200).json({userFound: true})
     } 
-    res.status(200).json({userFound: False})
+    res.status(200).json({userFound: false})
   } catch (error) {
     console.log(error)
     res.status(400).json(error)
@@ -522,11 +522,12 @@ export const checkEmailAddress = async(req, res) => {
 export const checkPhoneNumber = async(req, res) => {
   const { phone } = req.body
   try {
-    const user = await User.find({phone: phone})
-    if(!user) {
+    const user = await User.findOne({phone: phone})
+    console.log(user)
+    if(user) {
       return res.status(200).json({userFound: true})
     } 
-    res.status(200).json({userFound: False})
+    res.status(200).json({userFound: false})
   } catch (error) {
     console.log(error)
     res.status(400).json(error)
