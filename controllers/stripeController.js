@@ -111,14 +111,14 @@ export const createSubscriptionsForNewUser = async (req, res) => {
     console.log("Customer created: ", customer.id);
 
     // If package is familyMonthly or individual monthly
-    const paymentIntent = await stripe.paymentIntents.create({
+    /*const paymentIntent = await stripe.paymentIntents.create({
       amount, // Replace with the amount you want to charge in cents
       currency: "usd", // Replace with your preferred currency,
       payment_method: paymentMethod.id,
       customer: customer.id,
       setup_future_usage: "on_session",
       confirm: true,
-    });
+    });*/
 
     console.log("payment intent created: ", paymentIntent.id);
 
