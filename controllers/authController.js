@@ -1,700 +1,336 @@
 import User from "../models/User.js";
-import DeletedUser from "../models/DeletedUser.js";
 import Code from "../models/Code.js";
 import ChildAccount from "../models/ChildAccount.js";
-import Appointment from "../models/Appointment.js";
 import bcrypt from "bcrypt";
-import {createSubscription, updatePaymentMethod,} from "../utils/utils.js";
+import jwt from "jsonwebtoken";
+import nodemailer from "nodemailer";
+import {
+  createStripeCustomer,
+  sendSignupEmail,
+  createSubscription,
+} from "../utils/utils.js";
 import Stripe from "stripe";
 import * as dotenv from "dotenv";
 dotenv.config();
 const stripe = new Stripe(process.env.STRIPE_PRIVATE_KEY);
 
-export const getUser = async (req, res) => {
+export const registerUser = async (req, res) => {
   try {
-    const user = await User.findById(req.params.id).populate("childAccounts");
-    if(!user) {
-      const childUser = await ChildAccount.findById(req.params.id)
-      if(!childUser) {
-        return res.status(400).json("No User Found")
+    const { accountType, paymentMode, email } = req.body.primaryUserData;
+    console.log("user request data ",  req.body.primaryUserData);
+    const customer = await createStripeCustomer(req);
+    console.log("customer created", customer)
+    const code = await Code.findOne({ isAssigned: false });
+    const newUser = new User({
+      ...req.body.primaryUserData,
+      password: bcrypt.hashSync(req.body.primaryUserData.password, 10),
+      stripeCustomerId: customer.id,
+      loginCode: Math.random()//code.code,
+    });
+    if (accountType === "on demand") {
+      newUser.consultationFeePaid = false;
+    } else {
+      newUser.consultationFeePaid = true;
+    }
+    // code.isAssigned = true;
+    // code.userId = newUser._id;
+    //await code.save();
+    const savedUser = await newUser.save();
+
+    // Saving Child Accounts
+    let chileEmail = null
+    if (req.body.childUsersData) {
+      for (const childAccount of req.body.childUsersData.filter(Boolean)) {
+        const newChildAccount = new ChildAccount({
+          ...childAccount,
+          password: bcrypt.hashSync(childAccount.password, 10),
+          parentAccountId: savedUser._id,
+        });
+        newChildAccount.loginCode = savedUser.loginCode
+        const savedChildAccount = await newChildAccount.save();
+        savedUser.childAccounts.push(savedChildAccount._id);
+        // sendSignupEmail(savedChildAccount.email)
       }
-      return res.status(200).json(childUser)
-    }
-    // let paymentInfo = {}
-    // if (!user.isAdmin && user.stripeCustomerId !== "test") {
-    //   paymentInfo = user.stripeCustomerId ? await getPaymentInfo(user.stripeCustomerId) : ""
-    // }
-    // console.log(paymentInfo)
-    // const userInfo = user;
-    res.status(200).json(user);
-  } catch (error) {
-    res.status(500).json(error);
-  }
-};
-
-// New Method
-export const makeOnDemandPayment = async (req, res) => {
-  const { userId, amount, paymentMethod } = req.body;
-  try {
-    const user = await User.findById(userId);
-    if (user) {
-      const customer = await stripe.customers.create({
-        description: `Customer for MDHub- ${user.email}`,
-        email: user.email,
-        name: `${user.firstName} ${user.lastName}`,
-        payment_method: paymentMethod,
-        invoice_settings: {
-          default_payment_method: paymentMethod,
-        },
-      });
-      await stripe.paymentIntents.create({
-        amount: amount, // Replace with the amount you want to charge in cents
-        currency: "cad", // Replace with your preferred currency,
-        payment_method: paymentMethod,
-        customer: customer.id,
-        setup_future_usage: "on_session",
-        confirm: true,
-        metadata: {
-          firstName: user.firstName,
-          lastName: user.lastName,
-          email: user.email,
-        },
-      });
-      user.consultationFeePaid = true;
-      await user.save();
-      const mailOptions = {
-        from: "asfandyar687@gmail.com",
-        to: user.email,
-        subject: "Welcome to MDHUB",
-        html: `
-        <!doctype html>
-        <html lang="en" xmlns="http://www.w3.org/1999/xhtml" xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office">
-        <head>
-        <title></title>
-        <!--[if !mso]><!-->
-        <meta http-equiv="X-UA-Compatible" content="IE=edge">
-        <!--<![endif]-->
-        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1">
-        <style type="text/css">
-        #outlook a{padding:0;}body{margin:0;padding:0;-webkit-text-size-adjust:100%;-ms-text-size-adjust:100%;}table,td{border-collapse:collapse;mso-table-lspace:0pt;mso-table-rspace:0pt;}img{border:0;height:auto;line-height:100%;outline:none;text-decoration:none;-ms-interpolation-mode:bicubic;}p{display:block;margin:0;}
-        </style>
-        <!--[if mso]> <noscript><xml><o:OfficeDocumentSettings><o:AllowPNG/><o:PixelsPerInch>96</o:PixelsPerInch></o:OfficeDocumentSettings></xml></noscript>
-        <![endif]-->
-        <!--[if lte mso 11]>
-        <style type="text/css">
-        .ogf{width:100% !important;}
-        </style>
-        <![endif]-->
-        <!--[if !mso]><!-->
-        <link href="https://fonts.googleapis.com/css?family=Inter:400,300,700" rel="stylesheet" type="text/css">
-        <style type="text/css">
-        
-        </style>
-        <!--<![endif]-->
-        <style type="text/css">
-        @media only screen and (min-width:799px){.pc100{width:100%!important;max-width:100%;}.xc643{width:643px!important;max-width:643px;}}
-        </style>
-        <style media="screen and (min-width:799px)">.moz-text-html .pc100{width:100%!important;max-width:100%;}.moz-text-html .xc643{width:643px!important;max-width:643px;}
-        </style>
-        <style type="text/css">
-        @media only screen and (max-width:798px){table.fwm{width:100%!important;}td.fwm{width:auto!important;}}
-        </style>
-        <style type="text/css">
-        u+.emailify .gs{background:#000;mix-blend-mode:screen;display:inline-block;padding:0;margin:0;}u+.emailify .gd{background:#000;mix-blend-mode:difference;display:inline-block;padding:0;margin:0;}u+.emailify a,#MessageViewBody a,a[x-apple-data-detectors]{color:inherit!important;text-decoration:none!important;font-size:inherit!important;font-family:inherit!important;font-weight:inherit!important;line-height:inherit!important;}span.MsoHyperlink{mso-style-priority:99;color:inherit;}span.MsoHyperlinkFollowed{mso-style-priority:99;color:inherit;}td.b .klaviyo-image-block{display:inline;vertical-align:middle;}
-        @media only screen and (max-width:799px){.emailify{height:100%!important;margin:0!important;padding:0!important;width:100%!important;}u+.emailify .glist{margin-left:1em!important;}td.ico.v>div.il>a.l.m,td.ico.v .mn-label{padding-right:0!important;padding-bottom:16px!important;}td.x{padding-left:0!important;padding-right:0!important;}.fwm img{max-width:100%!important;height:auto!important;}.aw img{width:auto!important;margin-left:auto!important;margin-right:auto!important;}.ah img{height:auto!important;}td.b.nw>table,td.b.nw a{width:auto!important;}td.stk{border:0!important;}td.u{height:auto!important;}br.sb{display:none!important;}.thd-1 .i-thumbnail{display:inline-block!important;height:auto!important;overflow:hidden!important;}.hd-1{display:block!important;height:auto!important;overflow:visible!important;}.ht-1{display:table!important;height:auto!important;overflow:visible!important;}.hr-1{display:table-row!important;height:auto!important;overflow:visible!important;}.hc-1{display:table-cell!important;height:auto!important;overflow:visible!important;}div.r.pr-16>table>tbody>tr>td,div.r.pr-16>div>table>tbody>tr>td{padding-right:16px!important}div.r.pl-16>table>tbody>tr>td,div.r.pl-16>div>table>tbody>tr>td{padding-left:16px!important}}
-        </style>
-        <meta name="color-scheme" content="light dark">
-        <meta name="supported-color-schemes" content="light dark">
-        <!--[if gte mso 9]>
-        <style>li{text-indent:-1em;}
-        </style>
-        <![endif]-->
-        </head>
-        <body lang="en" link="#DD0000" vlink="#DD0000" class="emailify" style="mso-line-height-rule:exactly;word-spacing:normal;background-color:#f5f5f5;"><div style="display:none;font-size:1px;color:#ffffff;line-height:1px;max-height:0;max-width:0;opacity:0;overflow:hidden;">&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;</div><div class="bg" style="background-color:#f5f5f5;" lang="en">
-        <!--[if mso | IE]>
-        <table align="center" border="0" cellpadding="0" cellspacing="0" class="" role="none" style="width:800px;" width="800"><tr><td style="line-height:0;font-size:0;mso-line-height-rule:exactly;">
-        <![endif]--><div class style="margin:0px auto;max-width:800px;">
-        <table align="center" border="0" cellpadding="0" cellspacing="0" role="none" style="width:100%;"><tbody><tr><td style="direction:ltr;font-size:0;padding:0;text-align:center;">
-        <!--[if mso | IE]>
-        <table role="none" border="0" cellpadding="0" cellspacing="0"><tr><td class="" style="vertical-align:top;width:800px;">
-        <![endif]--><div class="pc100 ogf" style="font-size:0;text-align:left;direction:ltr;display:inline-block;vertical-align:top;width:100%;">
-        <table border="0" cellpadding="0" cellspacing="0" role="none" width="100%"><tbody><tr><td style="vertical-align:top;padding:0;">
-        <table border="0" cellpadding="0" cellspacing="0" role="none" style width="100%"><tbody><tr><td align="left" class="i  fw-1" style="font-size:0;padding:0;word-break:break-word;">
-        <table border="0" cellpadding="0" cellspacing="0" role="none" style="border-collapse:collapse;border-spacing:0;" class="fwm"><tbody><tr><td style="width:800px;" class="fwm"> <a href="https://mdhub.ca/login" target="_blank" title> <img alt src="https://e.hypermatic.com/63126edbcfa7ebb3f18704aee65035ad.jpg" style="border:0;display:block;outline:none;text-decoration:none;height:auto;width:100%;font-size:13px;" title width="800" height="auto"></a>
-        </td></tr></tbody></table>
-        </td></tr></tbody></table>
-        </td></tr></tbody></table></div>
-        <!--[if mso | IE]>
-        </td></tr></table>
-        <![endif]-->
-        </td></tr></tbody></table></div>
-        <!--[if mso | IE]>
-        </td></tr></table>
-        <table align="center" border="0" cellpadding="0" cellspacing="0" class="r-outlook -outlook pr-16-outlook pl-16-outlook -outlook" role="none" style="width:800px;" width="800"><tr><td style="line-height:0;font-size:0;mso-line-height-rule:exactly;">
-        <![endif]--><div class="r  pr-16 pl-16" style="background:#fffffe;background-color:#fffffe;margin:0px auto;max-width:800px;">
-        <table align="center" border="0" cellpadding="0" cellspacing="0" role="none" style="background:#fffffe;background-color:#fffffe;width:100%;"><tbody><tr><td style="border:none;direction:ltr;font-size:0;padding:0px 83px 90px 76px;text-align:left;">
-        <!--[if mso | IE]>
-        <table role="none" border="0" cellpadding="0" cellspacing="0"><tr><td class="c-outlook -outlook -outlook" style="vertical-align:middle;width:643px;">
-        <![endif]--><div class="xc643 ogf c" style="font-size:0;text-align:left;direction:ltr;display:inline-block;vertical-align:middle;width:100%;">
-        <table border="0" cellpadding="0" cellspacing="0" role="none" width="100%"><tbody><tr><td style="border:none;vertical-align:middle;padding:23px 0px 0px 0px;">
-        <table border="0" cellpadding="0" cellspacing="0" role="none" style width="100%"><tbody><tr><td align="left" class="x" style="font-size:0;word-break:break-word;"><div style="text-align:left;"><p style="Margin:0;text-align:left;mso-line-height-alt:150%"><span style="font-size:16px;font-family:Inter,Arial,sans-serif;font-weight:400;color:#777777;line-height:150%;">For additional support email our support team</span><span style="font-size:16px;font-family:Inter,Arial,sans-serif;font-weight:300;color:#777777;line-height:150%;">&nbsp;at</span><span style="font-size:16px;font-family:Inter,Arial,sans-serif;font-weight:700;color:#777777;line-height:150%;text-decoration:underline;"><a href="https://www.google.com/search?q=info%40mdhub.ca&sxsrf=APwXEdeF4iRdSXgjFZQwKHyxNh4xfjWAng%3A1683806329689&ei=edhcZP_fKf64seMP-NGFmA0&ved=0ahUKEwi_gJuxm-3-AhV-XGwGHfhoAdMQ4dUDCA8&uact=5&oq=info%40mdhub.ca&gs_lcp=Cgxnd3Mtd2l6LXNlcnAQA0oECEEYAVAAWABg290caAJwAHgAgAEAiAEAkgEAmAEAwAEB&sclient=gws-wiz-serp" style="color:#777777;text-decoration:underline;" target="_blank">&nbsp;info@mdhub.ca</a></span><span style="font-size:16px;font-family:Inter,Arial,sans-serif;font-weight:400;color:#777777;line-height:150%;">&nbsp;Or access our live chat on&nbsp;</span><span style="font-size:16px;font-family:Inter,Arial,sans-serif;font-weight:400;color:#777777;line-height:150%;text-decoration:underline;"><a href="https://mdhub.ca/" style="color:#777777;text-decoration:underline;" target="_blank">www.mdhub.ca</a></span><span style="font-size:16px;font-family:Inter,Arial,sans-serif;font-weight:400;color:#777777;line-height:150%;">&nbsp;We look forward to being a support for you your family and company! The Care team&nbsp;</span><span style="font-size:16px;font-family:Inter,Arial,sans-serif;font-weight:400;color:#777777;line-height:150%;text-decoration:underline;"><a href="https://mdhub.ca/" style="color:#777777;text-decoration:underline;" target="_blank">@MDHUB.CA</a></span></p></div>
-        </td></tr></tbody></table>
-        </td></tr></tbody></table></div>
-        <!--[if mso | IE]>
-        </td></tr></table>
-        <![endif]-->
-        </td></tr></tbody></table></div>
-        <!--[if mso | IE]>
-        </td></tr></table>
-        <![endif]--></div>
-        </body>
-        </html>
-        `,
-      };
-
-      transporter.sendMail(mailOptions, function (error, info) {
-        if (error) {
-          console.log(error);
-        } else {
-          console.log("Email sent: " + info.response);
-          // do something useful
-          res.status(200).json("Email Sent Successfully");
-        }
-      });
-      res.status(200).json(user);
-    }
-  } catch (error) {
-    console.log(error);
-    res.status(400).json({
-      message: "Could Not Complete the payment",
-      error: error.message,
-    });
-  }
-};
-/*
-Old Method
-export const makeOnDemandPayment = async (req, res) => {
-  const { userId, amount, paymentMethod } = req.body;
-  try {
-    const user = await User.findById(userId);
-    if (user) {
-      const customer = await stripe.customers.create({
-        description: `Customer for MDHub- ${user.email}`,
-        email: user.email,
-        name: `${user.firstName} ${user.lastName}`,
-        payment_method: paymentMethod,
-        invoice_settings: {
-          default_payment_method: paymentMethod,
-        },
-      });
-      await stripe.paymentIntents.create({
-        amount: amount, // Replace with the amount you want to charge in cents
-        currency: "cad", // Replace with your preferred currency,
-        payment_method: paymentMethod,
-        customer: customer.id,
-        setup_future_usage: "on_session",
-        confirm: true,
-        metadata: {
-          firstName: user.firstName,
-          lastName: user.lastName,
-          email: user.email,
-        },
-      });
-      user.consultationFeePaid = true;
-      await user.save();
-      const mailOptions = {
-        from: "asfandyar687@gmail.com",
-        to: user.email,
-        subject: "Welcome to MDHUB",
-        html: `
-        <!doctype html>
-        <html lang="en" xmlns="http://www.w3.org/1999/xhtml" xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office">
-        <head>
-        <title></title>
-        <!--[if !mso]><!-->
-        <meta http-equiv="X-UA-Compatible" content="IE=edge">
-        <!--<![endif]-->
-        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1">
-        <style type="text/css">
-        #outlook a{padding:0;}body{margin:0;padding:0;-webkit-text-size-adjust:100%;-ms-text-size-adjust:100%;}table,td{border-collapse:collapse;mso-table-lspace:0pt;mso-table-rspace:0pt;}img{border:0;height:auto;line-height:100%;outline:none;text-decoration:none;-ms-interpolation-mode:bicubic;}p{display:block;margin:0;}
-        </style>
-        <!--[if mso]> <noscript><xml><o:OfficeDocumentSettings><o:AllowPNG/><o:PixelsPerInch>96</o:PixelsPerInch></o:OfficeDocumentSettings></xml></noscript>
-        <![endif]-->
-        <!--[if lte mso 11]>
-        <style type="text/css">
-        .ogf{width:100% !important;}
-        </style>
-        <![endif]-->
-        <!--[if !mso]><!-->
-        <link href="https://fonts.googleapis.com/css?family=Inter:400,300,700" rel="stylesheet" type="text/css">
-        <style type="text/css">
-
-        </style>
-        <!--<![endif]-->
-        <style type="text/css">
-        @media only screen and (min-width:799px){.pc100{width:100%!important;max-width:100%;}.xc643{width:643px!important;max-width:643px;}}
-        </style>
-        <style media="screen and (min-width:799px)">.moz-text-html .pc100{width:100%!important;max-width:100%;}.moz-text-html .xc643{width:643px!important;max-width:643px;}
-        </style>
-        <style type="text/css">
-        @media only screen and (max-width:798px){table.fwm{width:100%!important;}td.fwm{width:auto!important;}}
-        </style>
-        <style type="text/css">
-        u+.emailify .gs{background:#000;mix-blend-mode:screen;display:inline-block;padding:0;margin:0;}u+.emailify .gd{background:#000;mix-blend-mode:difference;display:inline-block;padding:0;margin:0;}u+.emailify a,#MessageViewBody a,a[x-apple-data-detectors]{color:inherit!important;text-decoration:none!important;font-size:inherit!important;font-family:inherit!important;font-weight:inherit!important;line-height:inherit!important;}span.MsoHyperlink{mso-style-priority:99;color:inherit;}span.MsoHyperlinkFollowed{mso-style-priority:99;color:inherit;}td.b .klaviyo-image-block{display:inline;vertical-align:middle;}
-        @media only screen and (max-width:799px){.emailify{height:100%!important;margin:0!important;padding:0!important;width:100%!important;}u+.emailify .glist{margin-left:1em!important;}td.ico.v>div.il>a.l.m,td.ico.v .mn-label{padding-right:0!important;padding-bottom:16px!important;}td.x{padding-left:0!important;padding-right:0!important;}.fwm img{max-width:100%!important;height:auto!important;}.aw img{width:auto!important;margin-left:auto!important;margin-right:auto!important;}.ah img{height:auto!important;}td.b.nw>table,td.b.nw a{width:auto!important;}td.stk{border:0!important;}td.u{height:auto!important;}br.sb{display:none!important;}.thd-1 .i-thumbnail{display:inline-block!important;height:auto!important;overflow:hidden!important;}.hd-1{display:block!important;height:auto!important;overflow:visible!important;}.ht-1{display:table!important;height:auto!important;overflow:visible!important;}.hr-1{display:table-row!important;height:auto!important;overflow:visible!important;}.hc-1{display:table-cell!important;height:auto!important;overflow:visible!important;}div.r.pr-16>table>tbody>tr>td,div.r.pr-16>div>table>tbody>tr>td{padding-right:16px!important}div.r.pl-16>table>tbody>tr>td,div.r.pl-16>div>table>tbody>tr>td{padding-left:16px!important}}
-        </style>
-        <meta name="color-scheme" content="light dark">
-        <meta name="supported-color-schemes" content="light dark">
-        <!--[if gte mso 9]>
-        <style>li{text-indent:-1em;}
-        </style>
-        <![endif]-->
-        </head>
-        <body lang="en" link="#DD0000" vlink="#DD0000" class="emailify" style="mso-line-height-rule:exactly;word-spacing:normal;background-color:#f5f5f5;"><div style="display:none;font-size:1px;color:#ffffff;line-height:1px;max-height:0;max-width:0;opacity:0;overflow:hidden;">&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;</div><div class="bg" style="background-color:#f5f5f5;" lang="en">
-        <!--[if mso | IE]>
-        <table align="center" border="0" cellpadding="0" cellspacing="0" class="" role="none" style="width:800px;" width="800"><tr><td style="line-height:0;font-size:0;mso-line-height-rule:exactly;">
-        <![endif]--><div class style="margin:0px auto;max-width:800px;">
-        <table align="center" border="0" cellpadding="0" cellspacing="0" role="none" style="width:100%;"><tbody><tr><td style="direction:ltr;font-size:0;padding:0;text-align:center;">
-        <!--[if mso | IE]>
-        <table role="none" border="0" cellpadding="0" cellspacing="0"><tr><td class="" style="vertical-align:top;width:800px;">
-        <![endif]--><div class="pc100 ogf" style="font-size:0;text-align:left;direction:ltr;display:inline-block;vertical-align:top;width:100%;">
-        <table border="0" cellpadding="0" cellspacing="0" role="none" width="100%"><tbody><tr><td style="vertical-align:top;padding:0;">
-        <table border="0" cellpadding="0" cellspacing="0" role="none" style width="100%"><tbody><tr><td align="left" class="i  fw-1" style="font-size:0;padding:0;word-break:break-word;">
-        <table border="0" cellpadding="0" cellspacing="0" role="none" style="border-collapse:collapse;border-spacing:0;" class="fwm"><tbody><tr><td style="width:800px;" class="fwm"> <a href="https://mdhub.ca/login" target="_blank" title> <img alt src="https://e.hypermatic.com/63126edbcfa7ebb3f18704aee65035ad.jpg" style="border:0;display:block;outline:none;text-decoration:none;height:auto;width:100%;font-size:13px;" title width="800" height="auto"></a>
-        </td></tr></tbody></table>
-        </td></tr></tbody></table>
-        </td></tr></tbody></table></div>
-        <!--[if mso | IE]>
-        </td></tr></table>
-        <![endif]-->
-        </td></tr></tbody></table></div>
-        <!--[if mso | IE]>
-        </td></tr></table>
-        <table align="center" border="0" cellpadding="0" cellspacing="0" class="r-outlook -outlook pr-16-outlook pl-16-outlook -outlook" role="none" style="width:800px;" width="800"><tr><td style="line-height:0;font-size:0;mso-line-height-rule:exactly;">
-        <![endif]--><div class="r  pr-16 pl-16" style="background:#fffffe;background-color:#fffffe;margin:0px auto;max-width:800px;">
-        <table align="center" border="0" cellpadding="0" cellspacing="0" role="none" style="background:#fffffe;background-color:#fffffe;width:100%;"><tbody><tr><td style="border:none;direction:ltr;font-size:0;padding:0px 83px 90px 76px;text-align:left;">
-        <!--[if mso | IE]>
-        <table role="none" border="0" cellpadding="0" cellspacing="0"><tr><td class="c-outlook -outlook -outlook" style="vertical-align:middle;width:643px;">
-        <![endif]--><div class="xc643 ogf c" style="font-size:0;text-align:left;direction:ltr;display:inline-block;vertical-align:middle;width:100%;">
-        <table border="0" cellpadding="0" cellspacing="0" role="none" width="100%"><tbody><tr><td style="border:none;vertical-align:middle;padding:23px 0px 0px 0px;">
-        <table border="0" cellpadding="0" cellspacing="0" role="none" style width="100%"><tbody><tr><td align="left" class="x" style="font-size:0;word-break:break-word;"><div style="text-align:left;"><p style="Margin:0;text-align:left;mso-line-height-alt:150%"><span style="font-size:16px;font-family:Inter,Arial,sans-serif;font-weight:400;color:#777777;line-height:150%;">For additional support email our support team</span><span style="font-size:16px;font-family:Inter,Arial,sans-serif;font-weight:300;color:#777777;line-height:150%;">&nbsp;at</span><span style="font-size:16px;font-family:Inter,Arial,sans-serif;font-weight:700;color:#777777;line-height:150%;text-decoration:underline;"><a href="https://www.google.com/search?q=info%40mdhub.ca&sxsrf=APwXEdeF4iRdSXgjFZQwKHyxNh4xfjWAng%3A1683806329689&ei=edhcZP_fKf64seMP-NGFmA0&ved=0ahUKEwi_gJuxm-3-AhV-XGwGHfhoAdMQ4dUDCA8&uact=5&oq=info%40mdhub.ca&gs_lcp=Cgxnd3Mtd2l6LXNlcnAQA0oECEEYAVAAWABg290caAJwAHgAgAEAiAEAkgEAmAEAwAEB&sclient=gws-wiz-serp" style="color:#777777;text-decoration:underline;" target="_blank">&nbsp;info@mdhub.ca</a></span><span style="font-size:16px;font-family:Inter,Arial,sans-serif;font-weight:400;color:#777777;line-height:150%;">&nbsp;Or access our live chat on&nbsp;</span><span style="font-size:16px;font-family:Inter,Arial,sans-serif;font-weight:400;color:#777777;line-height:150%;text-decoration:underline;"><a href="https://mdhub.ca/" style="color:#777777;text-decoration:underline;" target="_blank">www.mdhub.ca</a></span><span style="font-size:16px;font-family:Inter,Arial,sans-serif;font-weight:400;color:#777777;line-height:150%;">&nbsp;We look forward to being a support for you your family and company! The Care team&nbsp;</span><span style="font-size:16px;font-family:Inter,Arial,sans-serif;font-weight:400;color:#777777;line-height:150%;text-decoration:underline;"><a href="https://mdhub.ca/" style="color:#777777;text-decoration:underline;" target="_blank">@MDHUB.CA</a></span></p></div>
-        </td></tr></tbody></table>
-        </td></tr></tbody></table></div>
-        <!--[if mso | IE]>
-        </td></tr></table>
-        <![endif]-->
-        </td></tr></tbody></table></div>
-        <!--[if mso | IE]>
-        </td></tr></table>
-        <![endif]--></div>
-        </body>
-        </html>
-        `,
-      };
-
-      transporter.sendMail(mailOptions, function (error, info) {
-        if (error) {
-          console.log(error);
-        } else {
-          console.log("Email sent: " + info.response);
-          // do something useful
-          res.status(200).json("Email Sent Successfully");
-        }
-      });
-      res.status(200).json(user);
-    }
-  } catch (error) {
-    console.log(error);
-    res.status(400).json({
-      message: "Could Not Complete the payment",
-      error: error.message,
-    });
-  }
-};
-*/
-
-export const getAllUsers = async (req, res) => {
-
-  try {
-    const users = await User.find({}, { password: 0 });
-    res.status(200).json(users);
-  } catch (error) {
-    res.status(500).json(error);
-  }
-};
-
-export const deleteUser = async (req, res) => {
-  const userId = req.params.id;
-
-  try {
-    const user = await User.findById(userId);
-
-    if (!user) {
-      return res.status(404).json({ message: "User not found" });
+      await savedUser.save();
     }
 
-    // Delete child accounts associated with the user
-    await ChildAccount.deleteMany({ parentAccount: userId });
-
-    // Delete appointments associated with the user
-    await Appointment.deleteMany({ user: userId });
-
-    // Add user to DeletedUser model
-    const deletedUser = new DeletedUser({
-      firstName: user.firstName,
-      lastName: user.lastName,
-      email: user.email,
-      password: user.password,
-      phone: user.phone,
-      gender: user.gender,
-      dateOfBirth: user.dateOfBirth,
-      address: user.address,
-      country: user.country,
-      city: user.city,
-      region: user.region,
-      postalCode: user.postalCode,
-      accountType: user.accountType,
-      paymentMode: user.paymentMode,
-      loginCode: user.loginCode,
-      stripeCustomerId: user.stripeCustomerId,
-    });
-
-    await deletedUser.save();
-
-    // Remove assigned code and update Code schema
-    if (user.loginCode) {
-      await Code.findOneAndUpdate(
-          { code: user.loginCode },
-          { isAssigned: false, userId: null }
-      );
+    if(accountType === "individual" && paymentMode === "monthly") {
+      //await confirmPaymentIntent(req, customer.id);
+      const subscription = await createSubscription("MDHUB Plus", "MDHUB Plus Monthly (3 Months)", paymentMode, customer)
+      savedUser.lastPaymentDate = subscription.current_period_start
+      savedUser.nextPaymentDate = subscription.current_period_end
+      savedUser.billingHistoryAmount = subscription.plan.amount
+      savedUser.subscriptionId = subscription.id
+      savedUser.save()
     }
 
-    // Delete user from User model
-    await User.findByIdAndRemove(userId);
-
-    return res.status(200).json({ message: "User deleted successfully" });
-  } catch (error) {
-    console.error(error);
-    return res.status(500).json({ message: "Internal server error" });
-  }
-};
-
-export const getNewUserAndDeletedUserData = async (req, res) => {
-  try {
-    const usersThisWeek = await User.find({
-      createdAt: {
-        $gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000), // documents created in the last 7 days
-      },
-    }).exec();
-
-    const deletedUsers = await DeletedUser.find({}).exec();
-
-    // Get the current month and year
-    const currentDate = new Date();
-    const currentMonth = currentDate.getMonth() + 1; // JavaScript months are 0-indexed, so we add 1
-    const currentYear = currentDate.getFullYear();
-
-    // Set the start and end of the current month
-    const startDate = new Date(currentYear, currentMonth - 1, 1); // Subtract 1 from the month to account for 0-indexing
-    const endDate = new Date(currentYear, currentMonth, 0); // Set the end date to the last day of the current month
+    if(accountType === "individual" && paymentMode === "yearly") {
+      const subscription = await createSubscription ("MDHUB Plus", "MDHUB Plus Yearly", paymentMode, customer)
+      savedUser.lastPaymentDate = subscription.current_period_start
+      savedUser.nextPaymentDate = subscription.current_period_end
+      savedUser.billingHistoryAmount = subscription.plan.amount
+      savedUser.subscriptionId = subscription.id
+      savedUser.save()
+    }
 
 
-    const stripeBalance = await stripe.balance.retrieve()
+    if(accountType === "family" && paymentMode === "monthly") {
+      const subscription = await createSubscription ("MDHUB Home & Family",
+          'MDHUB Home & Family Monthly (3 Months)', paymentMode, customer)
+      savedUser.lastPaymentDate = subscription.current_period_start
+      savedUser.nextPaymentDate = subscription.current_period_end
+      savedUser.billingHistoryAmount = subscription.plan.amount
+      savedUser.subscriptionId = subscription.id
+      savedUser.save()
+    }
 
-    // Use Stripe's subscriptions API to retrieve all subscriptions created within the current month
-    const subscriptions = await stripe.subscriptions.list({
-      created: {
-        gte: Math.floor(startDate.getTime() / 1000), // Convert to Unix timestamp
-        lte: Math.floor(endDate.getTime() / 1000), // Convert to Unix timestamp
-      },
-    });
+    if(accountType === "family" && paymentMode === "yearly") {
+      const subscription = await createSubscription ("MDHUB Home & Family",
+          "MDHUB Home & Family Yearly", paymentMode, customer)
+      savedUser.lastPaymentDate = subscription.current_period_start
+      savedUser.nextPaymentDate = subscription.current_period_end
+      savedUser.billingHistoryAmount = subscription.plan.amount
+      savedUser.subscriptionId = subscription.id
+      savedUser.save()
+    }
+
+    // TODO: update below packages
+    if(accountType === "corporate"){
+      const subscription = await createSubscription ("MdHub Corporate package", `MdHub Corporate package for ${
+          req.body.childUsersData.length + 1
+      } members`, paymentMode, customer)
+      savedUser.lastPaymentDate = subscription.current_period_start
+      savedUser.nextPaymentDate = subscription.current_period_end
+      savedUser.billingHistoryAmount = subscription.plan.amount
+      savedUser.subscriptionId = subscription.id
+      savedUser.save()
+    }
+
+    sendSignupEmail(email)
+
+    const {
+      password,
+      ...others
+    } = savedUser._doc;
 
     res.status(200).json({
-      message: "Successfully retrieved users and deleted users",
-      data: {
-        usersThisWeek,
-        deletedUsers,
-        totalRevenue: (stripeBalance.available[0].amount / 100).toFixed(2),
-        numberOfSubscriptions: subscriptions.data.length,
-      },
+      ...others
     });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({
-      message: "Failed to retrieve users and deleted users",
-      error: error.message,
-    });
-  }
-};
-
-export const getUsersWithLatestPayment = async (req, res) => {
-  try {
-    const users = await User.find();
-    await stripe.balance.retrieve()
-    const deletedUsers = await DeletedUser.find({}).exec();
-    // const usersWithLatestPayment = await Promise.all(users.map(async user => {
-    //   if (user.stripeCustomerId === "test") {
-    //     latestPayment = { data: [{ amount: 0, date: new Date() }] }
-    //   } else {
-    //     latestPayment = await stripe.paymentIntents.list({
-    //       customer: user.stripeCustomerId,
-    //       limit: 1
-    //     })
-    //   }
-    //   return {
-    //     ...user.toJSON(),
-    //     latestPayment: {
-    //       amount: latestPayment?.data[0]?.amount || null,
-    //       date: latestPayment?.data[0]?.created || null
-    //     }
-    //   }
-    // }))
-    // const usersWithLatestPayment = await Promise.all(
-    //   users.map(async (user) => {
-    //     latestPayment = await stripe.paymentIntents.list({
-    //       customer: user.stripeCustomerId,
-    //       limit: 1,
-    //     });
-    //     if (latestPayment.data.length === 0) {
-    //       return {
-    //         ...user.toJSON(),
-    //         latestPayment: {
-    //           amount: null,
-    //           date: null,
-    //         },
-    //       };
-    //     }
-
-    //     return {
-    //       ...user.toJSON(),
-    //       latestPayment: {
-    //         amount: latestPayment.data[0].amount || null,
-    //         date: latestPayment.data[0].created || null,
-    //       },
-    //     };
-    //   })
-    // );
-    res.status(200).json({users: users, deletedUsers: deletedUsers});
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({
-      message: "Failed to retrieve users",
-      error: error.message,
-    });
-  }
-};
-
-export const updateUser = async (req, res) => {
-  try {
-    if (req.body.paymentMethod) {
-      const attachedPaymentMethod = await updatePaymentMethod(
-          req.body.customerId,
-          req.body.paymentMethod
-      );
-      if (attachedPaymentMethod)
-        return res.status(200).json("Payment Method Updated");
-    }
-
-    const user = await User.findOne({ _id: req.params.id });
-
-    if (req.body.password) {
-      user.password = bcrypt.hashSync(req.body.password, 10);
-    }
-    if (req.body.email) {
-      user.email = req.body.email;
-    }
-    if (req.body.address) {
-      user.address = req.body.address;
-    }
-    if (req.body.phone) {
-      user.phone = req.body.phone;
-    }
-
-    if (req.body.address) {
-      user.address = req.body.address;
-    }
-
-    if (req.body.country) {
-      user.country = req.body.country;
-    }
-
-    if (req.body.region) {
-      user.region = req.body.region;
-    }
-
-    if (req.body.postalCode) {
-      user.postalCode = req.body.postalCode;
-    }
-
-    if (req.body.city) {
-      user.city = req.body.city
-    }
-
-    await user.save();
-    res.status(200).json("The User has been updated");
   } catch (err) {
     console.log(err);
     res.status(500).json(err);
   }
 };
 
-//New Method
-export const upgradeToIndividualMonthlyAccount = async (req, res) => {
+export const loginUser = async (req, res) => {
   try {
-    const upgradableUser = await User.findById(req.body.userId)
-    if(!upgradableUser) {
-      return res.status(400).json("User not found")
+    const user = await User.findOne({
+      email: req.body.email,
+    }).populate("childAccounts");
+    if (!user) {
+      const childUser = await ChildAccount.findOne({
+        email: req.body.email
+      })
+      if (!childUser) {
+        return res.status(401).json("User not found")
+      }
+      const passwordCorrect = await bcrypt.compare(
+          req.body.password,
+          childUser.password
+      )
+      if (passwordCorrect) {
+        const accessToken = await jwt.sign({
+              id: childUser._id,
+              isChildUser: true,
+            },
+            process.env.JWT_SEC, {
+              expiresIn: "3d"
+            }
+        )
+
+        const {
+          password,
+          createdAt,
+          updatedAt,
+          ...others
+        } = childUser
+        return res.status(200).json({
+          ...others,
+          accessToken
+        })
+      } else {
+        return res.status(401).json("Incorrect Password");
+      }
+    } else {
+      const passwordCorrect = await bcrypt.compare(
+          req.body.password,
+          user.password
+      );
+
+      if (passwordCorrect) {
+        const accessToken = jwt.sign({
+              id: user._id,
+              isChildUser: user.isChildUser,
+              isAdmin: user.isAdmin,
+            },
+            process.env.JWT_SEC, {
+              expiresIn: "3d"
+            }
+        );
+
+        user.lastLoggedIn = new Date();
+        await user.save();
+        const {
+          password,
+          createdAt,
+          updatedAt,
+          __v,
+          ...others
+        } = user._doc;
+        res.status(200).json({
+          ...others,
+          accessToken
+        });
+      } else {
+        res.status(401).json("Incorrect Password");
+      }
     }
-    const customer = await stripe.customers.retrieve(
-        upgradableUser.stripeCustomerId
-    );
-    const prices = await stripe.prices.list({ active: true });
-    const existingPrice = prices.data.find(
-        (price) => price.nickname === "MDHUB Plus Monthly"
-    );
-    upgradableUser.accountType = "individual"
-    updateCodeForUser.paymentMethod = "monthly"
-    const subscription = await createSubscription("MDHUB Plus", "MDHUB Plus Monthly (3 Months)"
-        , "monthly", customer)
-    upgradableUser.lastPaymentDate = subscription.current_period_start
-    upgradableUser.nextPaymentDate = subscription.current_period_end
-    upgradableUser.billingHistoryAmount = subscription.plan.amount
-    upgradableUser.subscriptionId = subscription.id
-    upgradableUser.consultationFeePaid = true
-    upgradableUser.save()
-    res.status(200).json("Account Upgraded")
-  } catch (error) {
-    res.status(400).json(error.message);
-  }
-}
-
-/*
-Old Method
-export const upgradeToIndividualMonthlyAccount = async (req, res) => {
-
-  try {
-    const upgradableUser = await User.findById(req.body.userId)
-    if(!upgradableUser) {
-      return res.status(400).json("User not found")
-    }
-    const customer = await stripe.customers.retrieve(
-      upgradableUser.stripeCustomerId
-    );
-    const prices = await stripe.prices.list({ active: true });
-    const existingPrice = prices.data.find(
-      (price) => price.nickname === "MDHUB Plus Monthly"
-    );
-    //await confirmPaymentIntentForOnDemandUser(req, customer, upgradableUser);
-    const subscription = await stripe.subscriptions.create({
-      customer: customer.id,
-      items: [{ price: existingPrice.id,qty:3 }],
-      default_payment_method:
-      customer.invoice_settings.default_payment_method,
-    });
-    console.log("Subscription Created", subscription)
-    upgradableUser.accountType = "individual"
-    updateCodeForUser.paymentMethod = "monthly"
-    upgradableUser.consultationFeePaid = true
-    upgradableUser.save()
-    res.status(200).json("Account Upgraded")
-  } catch (error) {
-    res.status(400).json(error.message);
-  }
-}
-*/
-
-export const updateCodeForUser = async (req, res) => {
-  try {
-    const user = await User.findOne({ _id: req.params.userId });
-    user.loginCode = req.body.codeValue;
-    await user.save();
-    res.status(200).json("The Code has been updated");
-  } catch (error) {
-    res.status(400).json(error.message);
+  } catch (err) {
+    res.status(500).json(err);
   }
 };
 
-export const cancelSubscription = async (req, res) => {
-  const { userId, subscriptionId } = req.body
+export const forgotPassword = async (req, res) => {
+  const transporter = nodemailer.createTransport({
+    service: "gmail",
+    auth: {
+      user: process.env.GMAIL_EMAIL,
+      pass: process.env.GMAIL_KEY,
+    },
+  });
   try {
-    const user = await User.findById(userId)
-    const cancelSubscription = await stripe.subscriptions.cancel(subscriptionId)
-    // Delete child accounts associated with the user
-    await ChildAccount.deleteMany({ parentAccount: userId });
-
-    // Delete appointments associated with the user
-    await Appointment.deleteMany({ user: userId });
-
-    // Add user to DeletedUser model
-    const deletedUser = new DeletedUser({
-      firstName: user.firstName,
-      lastName: user.lastName,
-      email: user.email,
-      password: user.password,
-      phone: user.phone,
-      gender: user.gender,
-      dateOfBirth: user.dateOfBirth,
-      address: user.address,
-      country: user.country,
-      city: user.city,
-      region: user.region,
-      postalCode: user.postalCode,
-      accountType: user.accountType,
-      paymentMode: user.paymentMode,
-      loginCode: user.loginCode,
-      stripeCustomerId: user.stripeCustomerId,
+    const user = await User.findOne({
+      email: req.body.email
     });
-
-    await deletedUser.save();
-
-    // Remove assigned code and update Code schema
-    if (user.loginCode) {
-      await Code.findOneAndUpdate(
-          { code: user.loginCode },
-          { isAssigned: false, userId: null }
-      );
+    if (!user) {
+      return res.status(400).json("User Not Found");
     }
-
-    // Delete user from User model
-    const delUser = await User.findByIdAndRemove(userId);
-    if(!delUser) {
-      const delChildUser = await ChildAccount.findByIdAndRemove(userId)
-    }
-    res.status(200).json("Subscription Cancelled")
-
+    const mailOptions = {
+      from: "mdhubtest@gmail.com",
+      to: req.body.email,
+      subject: "Forgot Password",
+      html: `
+      <!doctype html>
+      <html lang="en" xmlns="http://www.w3.org/1999/xhtml" xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office">
+      <head>
+      <title></title>
+      <!--[if !mso]><!-->
+      <meta http-equiv="X-UA-Compatible" content="IE=edge">
+      <!--<![endif]-->
+      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <style type="text/css">
+      #outlook a{padding:0;}body{margin:0;padding:0;-webkit-text-size-adjust:100%;-ms-text-size-adjust:100%;}table,td{border-collapse:collapse;mso-table-lspace:0pt;mso-table-rspace:0pt;}img{border:0;height:auto;line-height:100%;outline:none;text-decoration:none;-ms-interpolation-mode:bicubic;}p{display:block;margin:0;}
+      </style>
+      <!--[if mso]> <noscript><xml><o:OfficeDocumentSettings><o:AllowPNG/><o:PixelsPerInch>96</o:PixelsPerInch></o:OfficeDocumentSettings></xml></noscript>
+      <![endif]-->
+      <!--[if lte mso 11]>
+      <style type="text/css">
+      .ogf{width:100% !important;}
+      </style>
+      <![endif]-->
+      <!--[if !mso]><!-->
+      <link href="https://fonts.googleapis.com/css?family=Inter:700,500,400" rel="stylesheet" type="text/css">
+      <style type="text/css">
+      
+      </style>
+      <!--<![endif]-->
+      <style type="text/css">
+      @media only screen and (min-width:634px){.xc603{width:603px!important;max-width:603px;}.xc571{width:571px!important;max-width:571px;}}
+      </style>
+      <style media="screen and (min-width:634px)">.moz-text-html .xc603{width:603px!important;max-width:603px;}.moz-text-html .xc571{width:571px!important;max-width:571px;}
+      </style>
+      <style type="text/css">
+      @media only screen and (max-width:633px){table.fwm{width:100%!important;}td.fwm{width:auto!important;}}noinput.mn-checkbox{display:block!important;max-height:none!important;visibility:visible!important;}
+      @media only screen and (max-width:633px){.mn-checkbox[type="checkbox"]~.il{display:none!important;}.mn-checkbox[type="checkbox"]:checked~.il,.mn-checkbox[type="checkbox"]~.mn-trigger{display:block!important;max-width:none!important;max-height:none!important;font-size:inherit!important;}.mn-checkbox[type="checkbox"]~.il>a{display:block!important;}.mn-checkbox[type="checkbox"]:checked~.mn-trigger .mn-icon-close{display:block!important;}.mn-checkbox[type="checkbox"]:checked~.mn-trigger .mn-icon-open{display:none!important;}}
+      </style>
+      <style type="text/css">
+      u+.emailify .gs{background:#000;mix-blend-mode:screen;display:inline-block;padding:0;margin:0;}u+.emailify .gd{background:#000;mix-blend-mode:difference;display:inline-block;padding:0;margin:0;}u+.emailify a,#MessageViewBody a,a[x-apple-data-detectors]{color:inherit!important;text-decoration:none!important;font-size:inherit!important;font-family:inherit!important;font-weight:inherit!important;line-height:inherit!important;}span.MsoHyperlink{mso-style-priority:99;color:inherit;}span.MsoHyperlinkFollowed{mso-style-priority:99;color:inherit;}td.b .klaviyo-image-block{display:inline;vertical-align:middle;}
+      @media only screen and (max-width:634px){.emailify{height:100%!important;margin:0!important;padding:0!important;width:100%!important;}u+.emailify .glist{margin-left:1em!important;}td.ico.v>div.il>a.l.m,td.ico.v .mn-label{padding-right:0!important;padding-bottom:16px!important;}td.x{padding-left:0!important;padding-right:0!important;}.fwm img{max-width:100%!important;height:auto!important;}.aw img{width:auto!important;margin-left:auto!important;margin-right:auto!important;}.ah img{height:auto!important;}td.b.nw>table,td.b.nw a{width:auto!important;}td.stk{border:0!important;}td.u{height:auto!important;}br.sb{display:none!important;}.thd-1 .i-thumbnail{display:inline-block!important;height:auto!important;overflow:hidden!important;}.hd-1{display:block!important;height:auto!important;overflow:visible!important;}.ht-1{display:table!important;height:auto!important;overflow:visible!important;}.hr-1{display:table-row!important;height:auto!important;overflow:visible!important;}.hc-1{display:table-cell!important;height:auto!important;overflow:visible!important;}div.r.pr-16>table>tbody>tr>td,div.r.pr-16>div>table>tbody>tr>td{padding-right:16px!important}div.r.pl-16>table>tbody>tr>td,div.r.pl-16>div>table>tbody>tr>td{padding-left:16px!important}td.v.s-8>div.il>a.l.m{padding-right:8px!important;}td.v.ico.s-8>div.il>a.l.m,td.v.ico.s-8 .mn-label{padding-bottom:8px!important;padding-right:0!important;}td.b.fw-1>table{width:100%!important}td.fw-1>table>tbody>tr>td>a{display:block!important;width:100%!important;padding-left:0!important;padding-right:0!important;}td.b.fw-1>table{width:100%!important}td.fw-1>table>tbody>tr>td{width:100%!important;padding-left:0!important;padding-right:0!important;}}
+      </style>
+      <meta name="color-scheme" content="light dark">
+      <meta name="supported-color-schemes" content="light dark">
+      <!--[if gte mso 9]>
+      <style>li{text-indent:-1em;}
+      </style>
+      <![endif]-->
+      </head>
+      <body lang="en" link="#DD0000" vlink="#DD0000" class="emailify" style="mso-line-height-rule:exactly;word-spacing:normal;background-color:#f5f5f5;"><div style="display:none;font-size:1px;color:#ffffff;line-height:1px;max-height:0;max-width:0;opacity:0;overflow:hidden;">&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;&#847;&nbsp;</div><div class="bg" style="background-color:#f5f5f5;" lang="en">
+      <!--[if mso | IE]>
+      <table align="center" border="0" cellpadding="0" cellspacing="0" class="r-outlook -outlook pr-16-outlook pl-16-outlook -outlook" role="none" style="width:635px;" width="635"><tr><td style="line-height:0;font-size:0;mso-line-height-rule:exactly;">
+      <![endif]--><div class="r  pr-16 pl-16" style="background:#fffffe;background-color:#fffffe;margin:0px auto;max-width:635px;">
+      <table align="center" border="0" cellpadding="0" cellspacing="0" role="none" style="background:#fffffe;background-color:#fffffe;width:100%;"><tbody><tr><td style="border:none;direction:ltr;font-size:0;padding:71px 16px 0px 16px;text-align:left;">
+      <!--[if mso | IE]>
+      <table role="none" border="0" cellpadding="0" cellspacing="0"><tr><td class="c-outlook -outlook -outlook" style="vertical-align:middle;width:603px;">
+      <![endif]--><div class="xc603 ogf c" style="font-size:0;text-align:left;direction:ltr;display:inline-block;vertical-align:middle;width:100%;">
+      <table border="0" cellpadding="0" cellspacing="0" role="none" style="border:none;vertical-align:middle;" width="100%"><tbody><tr><td align="center" class="i  m" style="font-size:0;padding:0;padding-bottom:16px;word-break:break-word;">
+      <table border="0" cellpadding="0" cellspacing="0" role="none" style="border-collapse:collapse;border-spacing:0;"><tbody><tr><td style="width:138px;"> <img alt src="https://e.hypermatic.com/601835ae88fec457f3c73ad0a3d24bf2.png" style="border:0;display:block;outline:none;text-decoration:none;height:auto;width:100%;font-size:13px;" title width="138" height="auto">
+      </td></tr></tbody></table>
+      </td></tr><tr><td align="center" class="v  s-8 m" style="font-size:0;padding-bottom:16px;word-break:break-word;"><div class="il" style>
+      <!--[if mso | IE]>
+      <table role="none" border="0" cellpadding="0" cellspacing="0" align="center"><tr></tr></table>
+      <![endif]--></div>
+      </td></tr><tr><td align="center" class="x" style="font-size:0;padding-bottom:0;word-break:break-word;"><div style="text-align:center;"><p style="Margin:0;text-align:center;mso-line-height-alt:121%"><span style="font-size:19px;font-family:Inter,Arial,sans-serif;font-weight:500;color:#000000;line-height:121%;">You can now reset your password</span></p></div>
+      </td></tr></tbody></table></div>
+      <!--[if mso | IE]>
+      </td></tr></table>
+      <![endif]-->
+      </td></tr></tbody></table></div>
+      <!--[if mso | IE]>
+      </td></tr></table>
+      <table align="center" border="0" cellpadding="0" cellspacing="0" class="r-outlook -outlook pr-16-outlook pl-16-outlook -outlook" role="none" style="width:635px;" width="635"><tr><td style="line-height:0;font-size:0;mso-line-height-rule:exactly;">
+      <![endif]--><div class="r  pr-16 pl-16" style="background:#fffffe;background-color:#fffffe;margin:0px auto;max-width:635px;">
+      <table align="center" border="0" cellpadding="0" cellspacing="0" role="none" style="background:#fffffe;background-color:#fffffe;width:100%;"><tbody><tr><td style="border:none;direction:ltr;font-size:0;padding:18px 16px 0px 16px;text-align:left;">
+      <!--[if mso | IE]>
+      <table role="none" border="0" cellpadding="0" cellspacing="0"><tr><td class="c-outlook -outlook -outlook" style="vertical-align:middle;width:603px;">
+      <![endif]--><div class="xc603 ogf c" style="font-size:0;text-align:left;direction:ltr;display:inline-block;vertical-align:middle;width:100%;">
+      <table border="0" cellpadding="0" cellspacing="0" role="none" style="border:none;vertical-align:middle;" width="100%"><tbody><tr><td class="s  m" style="font-size:0;padding:0;padding-bottom:8px;word-break:break-word;"><div style="height:4px;line-height:4px;">&#8202;</div>
+      </td></tr><tr><td align="center" vertical-align="middle" class="b  fw-1" style="font-size:0;padding:0;padding-bottom:0;word-break:break-word;">
+      <table border="0" cellpadding="0" cellspacing="0" role="none" style="border-collapse:separate;width:154px;line-height:100%;"><tbody><tr><td align="center" bgcolor="#1ebc92" role="none" style="border:none;border-radius:60px 60px 60px 60px;cursor:auto;mso-padding-alt:12px 0px 12px 0px;background:#1ebc92;" valign="middle"> <a href="https://mdhub.ca/reset-password/${user._id}" style="display:inline-block;width:154px;background:#1ebc92;color:#ffffff;font-family:Inter,Arial,sans-serif;font-size:13px;font-weight:normal;line-height:100%;margin:0;text-decoration:none;text-transform:none;padding:12px 0px 12px 0px;mso-padding-alt:0;border-radius:60px 60px 60px 60px;" target="_blank"> <span style="font-size:14px;font-family:Inter,Arial,sans-serif;font-weight:700;color:#ffffff;line-height:121%;text-decoration:underline;">Reset Password</span></a>
+      </td></tr></tbody></table>
+      </td></tr></tbody></table></div>
+      <!--[if mso | IE]>
+      </td></tr></table>
+      <![endif]-->
+      </td></tr></tbody></table></div>
+      <!--[if mso | IE]>
+      </td></tr></table>
+      <table align="center" border="0" cellpadding="0" cellspacing="0" class="r-outlook -outlook pr-16-outlook pl-16-outlook -outlook" role="none" style="width:635px;" width="635"><tr><td style="line-height:0;font-size:0;mso-line-height-rule:exactly;">
+      <![endif]--><div class="r  pr-16 pl-16" style="background:#fffffe;background-color:#fffffe;margin:0px auto;max-width:635px;">
+      <table align="center" border="0" cellpadding="0" cellspacing="0" role="none" style="background:#fffffe;background-color:#fffffe;width:100%;"><tbody><tr><td style="border:none;direction:ltr;font-size:0;padding:32px 32px 32px 32px;text-align:left;">
+      <!--[if mso | IE]>
+      <table role="none" border="0" cellpadding="0" cellspacing="0"><tr><td class="c-outlook -outlook -outlook" style="vertical-align:middle;width:571px;">
+      <![endif]--><div class="xc571 ogf c" style="font-size:0;text-align:left;direction:ltr;display:inline-block;vertical-align:middle;width:100%;">
+      <table border="0" cellpadding="0" cellspacing="0" role="none" style="border:none;vertical-align:middle;" width="100%"><tbody><tr><td align="center" class="x" style="font-size:0;word-break:break-word;"><div style="text-align:center;"><p style="Margin:0;text-align:center;mso-line-height-alt:150%"><span style="font-size:16px;font-family:Inter,Arial,sans-serif;font-weight:400;color:#777777;line-height:150%;">Didn&rsquo;t ask for a new password? You can ignore this email</span></p></div>
+      </td></tr></tbody></table></div>
+      <!--[if mso | IE]>
+      </td></tr></table>
+      <![endif]-->
+      </td></tr></tbody></table></div>
+      <!--[if mso | IE]>
+      </td></tr></table>
+      <![endif]--></div>
+      </body>
+      </html>
+        `,
+    };
+    const info = await transporter.sendMail(mailOptions);
+    console.log("Email sent: " + info.response);
+    res.status(201).json({
+      success: true,
+      message: "Email sent to the user for password update",
+    });
   } catch (error) {
-    console.log(error)
-    res.status(404).json(error)
+    res.status(500).json(error);
   }
-}
-
-export const checkEmailAddress = async(req, res) => {
-  console.log("req ",req.body);
-  const { email } = req.body
-  try {
-    const user = await User.findOne({email: email})
-    if(user) {
-      return res.status(200).json({userFound: true})
-    }
-    res.status(200).json({userFound: false})
-  } catch (error) {
-    console.log(error)
-    res.status(400).json(error)
-  }
-}
-
-export const checkPhoneNumber = async(req, res) => {
-  const { phone } = req.body
-  try {
-    const user = await User.findOne({phone: phone})
-    if(user) {
-      return res.status(200).json({userFound: true})
-    }
-    res.status(200).json({userFound: false})
-  } catch (error) {
-    console.log(error)
-    res.status(400).json(error)
-  }
-}
+};
