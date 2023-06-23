@@ -33,7 +33,7 @@ export const transporter = nodemailer.createTransport({
 
 export const nursingAppointmentMailOptionsWithoutAttachment = (req) => {
   var html;
-  
+
   if (req.body.firstName && req.body.lastName && req.body.email) {
     html = `
       <div>
@@ -71,10 +71,10 @@ export const nursingAppointmentMailOptionsWithoutAttachment = (req) => {
             Service Type: ${req.body.appointmentType}
           </li>
           ${
-            req.body.selectedServices ? 
-            `<li>Selected Services: ${JSON.parse(req.body.selectedServices).toString()}</li>`: 
+        req.body.selectedServices ?
+            `<li>Selected Services: ${JSON.parse(req.body.selectedServices).toString()}</li>`:
             ""
-          }
+    }
         </ul>
       </div>
     `;
@@ -109,10 +109,10 @@ export const nursingAppointmentMailOptionsWithoutAttachment = (req) => {
             Service Type: ${req.body.appointmentType}
           </li>
           ${
-            req.body.selectedServices ? 
-            `<li>Selected Services: ${JSON.parse(req.body.selectedServices).toString()}</li>`: 
+        req.body.selectedServices ?
+            `<li>Selected Services: ${JSON.parse(req.body.selectedServices).toString()}</li>`:
             ""
-          }
+    }
         </ul>
       </div>
     `;
@@ -169,10 +169,10 @@ export const nursingAppointmentMailOptionsWithAttachment = (req) => {
             Service Type: ${req.body.appointmentType}
           </li>
           ${
-            req.body.selectedServices ? 
-            `<li>Selected Services: ${JSON.parse(req.body.selectedServices).toString()}</li>`: 
+        req.body.selectedServices ?
+            `<li>Selected Services: ${JSON.parse(req.body.selectedServices).toString()}</li>`:
             ""
-          }
+    }
         </ul>
       </div>
       `,
@@ -563,10 +563,10 @@ export const confirmPaymentIntentForOnDemandUser = async (req, customer, user) =
 };
 
 export const confirmAppointmentPaymentIntent = async (
-  req,
-  customerId,
-  paymentMethod,
-  amount
+    req,
+    customerId,
+    paymentMethod,
+    amount
 ) => {
   try {
     const paymentIntent = await stripe.paymentIntents.create({
@@ -612,13 +612,12 @@ const checkPrice = async (priceName, productId, paymentMode) => {
     active: true
   });
   const existingPrice = prices.data.find(
-    (price) => price.nickname === priceName
+      (price) => price.nickname === priceName
   );
-
   if(existingPrice) {
     return existingPrice
   } else {
-    const newPrice = await stripe.prices.create({
+    /*const newPrice = await stripe.prices.create({
       product: productId,
       unit_amount: req.body.totalAmount,
       currency: "cad",
@@ -628,9 +627,10 @@ const checkPrice = async (priceName, productId, paymentMode) => {
       nickname: "priceName",
     });
 
-    return newPrice
+    return newPrice*/
   }
 }
+
 
 export const createSubscription = async (productName, priceName, paymentMode, customer) => {
   try {
@@ -638,46 +638,75 @@ export const createSubscription = async (productName, priceName, paymentMode, cu
       active: true
     });
     const existingProduct = products.data.find(
-      (product) => product.name === productName
+        (product) => product.name === productName
+    );
+    const productId = existingProduct.id
+    console.log(priceName+" - "+productId, paymentMode);
+    const price = await checkPrice(priceName, productId, paymentMode)
+    const subscription = await stripe.subscriptions.create({
+      customer: customer.id,
+      items: [{
+        price: price.id,
+      }],
+      trial_period_days: 0,
+      default_payment_method: customer.invoice_settings.default_payment_method,
+    });
+    return subscription
+  } catch (error) {
+    console.log(error)
+  }
+}
+
+/*
+Old Method
+export const createSubscription = async (productName, priceName, paymentMode, customer) => {
+  try {
+    const products = await stripe.products.list({
+      active: true
+    });
+    const existingProduct = products.data.find(
+        (product) => product.name === productName
     );
     if(!existingProduct) {
       const newProduct = await stripe.products.create({
         active: true,
         name: productName,
       });
-  
+
       // Get the newly created product ID
       const productId = newProduct.id;
       console.log("Product created:", newProduct);
-  
+
       const price = await checkPrice(priceName, productId, paymentMode)
-  
+
       const subscription = await stripe.subscriptions.create({
         customer: customer.id,
         items: [{
-          price: price.id
+          price: price.id,
+          quantity: qty
         }],
         trial_period_days: 90,
         default_payment_method: customer.invoice_settings.default_payment_method,
       });
       return subscription
     } else {
-      const productId = existingProduct.id
-      const price = await checkPrice(priceName, productId, paymentMode)
-      const subscription = await stripe.subscriptions.create({
-        customer: customer.id,
-        items: [{
-          price: price.id
-        }],
-        trial_period_days: 90,
-        default_payment_method: customer.invoice_settings.default_payment_method,
-      });
-      return subscription
+    const productId = existingProduct.id
+    const price = await checkPrice(priceName, productId, paymentMode)
+    const subscription = await stripe.subscriptions.create({
+      customer: customer.id,
+      items: [{
+        price: price.id,
+      }],
+      trial_period_days: 0,
+      default_payment_method: customer.invoice_settings.default_payment_method,
+    });
+    return subscription
     }
   } catch (error) {
     console.log(error)
   }
 }
+*/
 
 export const calculateFutureDate = (account, paymentMode) => {
   // Get the current date
