@@ -648,6 +648,9 @@ export const createSubscription = async (productName, priceName, paymentMode, cu
       items: [{
         price: price.id,
       }],
+      automatic_tax: {
+        enabled: true
+      },
       trial_period_days: 0,
       default_payment_method: customer.invoice_settings.default_payment_method,
     });
