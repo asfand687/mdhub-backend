@@ -25,16 +25,16 @@ export const registerUser = async (req, res) => {
       ...req.body.primaryUserData,
       password: bcrypt.hashSync(req.body.primaryUserData.password, 10),
       stripeCustomerId: customer.id,
-      loginCode: Math.random()//code.code,
+      loginCode: code.code,
     });
     if (accountType === "on demand") {
       newUser.consultationFeePaid = false;
     } else {
       newUser.consultationFeePaid = true;
     }
-    // code.isAssigned = true;
-    // code.userId = newUser._id;
-    //await code.save();
+    code.isAssigned = true;
+    code.userId = newUser._id;
+    await code.save();
     const savedUser = await newUser.save();
 
     // Saving Child Accounts
