@@ -15,6 +15,7 @@ import {
   transporter
 } from "./utils/utils.js";
 import cron from "node-cron";
+import User from "./models/User.js";
 
 dotenv.config();
 
