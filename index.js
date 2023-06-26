@@ -7,10 +7,14 @@ import userRoutes from "./routes/userRoutes.js";
 import appointmentRoutes from "./routes/appointmentRoutes.js";
 import adminRoutes from './routes/adminRoutes.js'
 import stripeRoutes from "./routes/stripeRoutes.js";
-import multer from "multer";
-import nodemailer from "nodemailer";
 import Stripe from "stripe";
-import { uploadFile, transporter } from "./utils/utils.js";
+import {
+  cancelStripeSubscription, createMonthlySubscription,
+  pauseAutoPayment,
+  setthreeMonthSubscriptionEndDate,
+  transporter
+} from "./utils/utils.js";
+import cron from "node-cron";
 
 dotenv.config();
 
@@ -37,6 +41,53 @@ const stripe = new Stripe(process.env.STRIPE_PRIVATE_KEY);
 // })
 
 const app = express();
+
+// cronjobs
+cron.schedule("59 23 * * *", async function () {
+  console.log("---------------------");
+  console.log("running a task every day at 23:59");
+  // canceling auto collect for 3 months subscribers so stripe will not charge auto for next 3 months
+  let today = new Date().toISOString().split('T')[0];
+  let users = await User.find({
+    createdAt:{
+      $gte: today+" 00:00:0+00:00",
+      $lt: today+" 23:59:0+00:00"
+    },
+    paymentMode: "monthly",
+    threeMonthSubscriptionEndDate: {$exists: false},
+    subscriptionId: {$exists: true}
+  });
+  console.log("users",users);
+  if(users.length>0){
+    users.forEach((user)=>{
+      pauseAutoPayment(user.subscriptionId);
+      setthreeMonthSubscriptionEndDate(user.id);
+    });
+  } else {
+    if(users.subscriptionId){
+      pauseAutoPayment(users.subscriptionId);
+      setthreeMonthSubscriptionEndDate(users.id);
+    }
+  }
+  // Creating one month subscription for the users whose 3 months subscription is expiring today.
+  let users_for_sub = await User.find({
+    threeMonthSubscriptionEndDate:{
+      $gte: today+" 00:00:0+00:00",
+      $lt: today+" 23:59:0+00:00"
+    },
+  });
+  if(users_for_sub.length>0){
+    users_for_sub.forEach((user)=>{
+      cancelStripeSubscription(user.subscriptionId);
+      createMonthlySubscription(user.id);
+    });
+  } else {
+    if(users_for_sub.subscriptionId){
+      cancelStripeSubscription(users_for_sub.subscriptionId);
+      createMonthlySubscription(users_for_sub.id);
+    }
+  }
+});
 
 // middleware
 app.use(express.json({ limit: "50mb" }));

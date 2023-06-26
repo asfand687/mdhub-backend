@@ -5,6 +5,8 @@ import multer from "multer";
 import nodemailer from "nodemailer";
 import path from "path";
 import dayjs from "dayjs"
+import User from "../models/User.js";
+import user from "../models/User.js";
 
 dotenv.config();
 const stripe = new Stripe(process.env.STRIPE_PRIVATE_KEY);
@@ -606,7 +608,7 @@ export const updatePaymentMethod = async (customerId, paymentMethodId) => {
   }
 };
 
-const checkPrice = async (priceName, productId, paymentMode) => {
+const checkPrice = async (priceName) => {
   // Check if price exists
   const prices = await stripe.prices.list({
     active: true
@@ -641,8 +643,7 @@ export const createSubscription = async (productName, priceName, paymentMode, cu
         (product) => product.name === productName
     );
     const productId = existingProduct.id
-    console.log(priceName+" - "+productId, paymentMode);
-    const price = await checkPrice(priceName, productId, paymentMode)
+    const price = await checkPrice(priceName)
     const subscription = await stripe.subscriptions.create({
       customer: customer.id,
       items: [{
@@ -655,6 +656,66 @@ export const createSubscription = async (productName, priceName, paymentMode, cu
       default_payment_method: customer.invoice_settings.default_payment_method,
     });
     return subscription
+  } catch (error) {
+    console.log(error)
+  }
+}
+
+export const pauseAutoPayment = async (subscriptionId) =>{
+  try {
+    await stripe.subscriptions.update(
+        subscriptionId,
+        {
+          pause_collection: {
+            behavior: 'void',
+          },
+        }
+    )
+  } catch (error) {
+    console.log(error)
+  }
+}
+export const setthreeMonthSubscriptionEndDate = async (id) =>{
+  try {
+    const user = await User.findOne({ _id: id });
+    let nextPaymentDate = new Date(0); // The 0 there is the key, which sets the date to the epoch
+    nextPaymentDate.setUTCSeconds(user.nextPaymentDate);
+    user.threeMonthSubscriptionEndDate=nextPaymentDate;
+    await user.save()
+  } catch (error) {
+    console.log(error)
+  }
+}
+
+export const cancelStripeSubscription = async (id) =>{
+  try {
+    const deleted = await stripe.subscriptions.cancel(id);
+  } catch (error) {
+    console.log(error)
+  }
+}
+export const createMonthlySubscription = async (id) =>{
+  const user = await User.findOne({ _id: id });
+  const customer = await stripe.customers.retrieve(user.stripeCustomerId);
+  if(user.accountType=='family'){
+    const subscription = await createSubscription ("MDHUB Home & Family",
+        'MDHUB Home & Family Monthly', "", customer)
+    user.lastPaymentDate = subscription.current_period_start
+    user.nextPaymentDate = subscription.current_period_end
+    user.billingHistoryAmount = subscription.plan.amount
+    user.subscriptionId = subscription.id
+  } else {
+    const subscription = await createSubscription("MDHUB Plus",
+        "MDHUB Plus Monthly", "", customer)
+    user.lastPaymentDate = subscription.current_period_start
+    user.nextPaymentDate = subscription.current_period_end
+    user.billingHistoryAmount = subscription.plan.amount
+    user.subscriptionId = subscription.id
+  }
+  user.threeMonthSubscriptionEndDate = undefined
+  user.save();
+  try {
+    const deleted = await stripe.subscriptions.cancel(id);
   } catch (error) {
     console.log(error)
   }
