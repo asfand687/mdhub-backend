@@ -57,9 +57,10 @@ cron.schedule("59 23 * * *", async function () {
     threeMonthSubscriptionEndDate: {$exists: false},
     subscriptionId: {$exists: true}
   });
+  console.log(today+" 00:00:0+00:00", today+" 23:59:0+00:00");
   console.log("users",users);
   if(users.length>0){
-    users.forEach((user)=>{
+    users.forEach((user)=> {
       pauseAutoPayment(user.subscriptionId);
       setthreeMonthSubscriptionEndDate(user.id);
     });
