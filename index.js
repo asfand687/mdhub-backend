@@ -21,26 +21,6 @@ dotenv.config();
 
 const stripe = new Stripe(process.env.STRIPE_PRIVATE_KEY);
 
-// var storage = multer.diskStorage({
-//   destination: function (req, file, cb) {
-//     cb(null, 'uploads/')
-//   },
-//   filename: function (req, file, cb) {
-//     /*Appending extension with original name*/
-//     cb(null, file.originalname)
-//   }
-// })
-
-// var upload = multer({ storage: storage })
-
-// const transporter = nodemailer.createTransport({
-//   service: 'gmail',
-//   auth: {
-//     user: process.env.GMAIL_EMAIL,
-//     pass: process.env.GMAIL_KEY
-//   }
-// })
-
 const app = express();
 
 // cronjobs
